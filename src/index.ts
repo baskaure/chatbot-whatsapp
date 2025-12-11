@@ -6,6 +6,7 @@ import dotenv from "dotenv";
 import { loadConfig } from "./config.js";
 import { handleIncoming } from "./flow.js";
 import { IncomingMessage } from "./types.js";
+import { isDuplicate } from "./dedup.js";
 
 dotenv.config();
 
@@ -36,9 +37,16 @@ app.post("/webhook/whatsapp", async (req, res) => {
   // Adapt parsing according to provider payload
   const body = req.body?.Body || req.body?.body || "";
   const from = req.body?.From || req.body?.from || "unknown";
+  const messageSid = req.body?.MessageSid || req.body?.SmsMessageSid || undefined;
+
+  // Déduplication basique pour éviter les traitements multiples du même message
+  if (await isDuplicate(messageSid)) {
+    return res.json({ ok: true, dedup: true });
+  }
 
   const incoming: IncomingMessage = {
     id: uuid(),
+    messageSid,
     from,
     body,
   };

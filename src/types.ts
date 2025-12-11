@@ -38,6 +38,7 @@ export interface ConversationState {
 
 export interface IncomingMessage {
   id: string;
+  messageSid?: string;
   from: string;
   body: string;
 }

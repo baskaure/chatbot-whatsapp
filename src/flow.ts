@@ -4,12 +4,35 @@ import { sendMessage } from "./provider/sendMessage.js";
 import { computeTotalScore } from "./scoring.js";
 import { persistConversation } from "./storage/index.js";
 
+const reminderTimers = new Map<string, NodeJS.Timeout>();
+
 function normalize(text: string): string {
   return text.trim().toLowerCase();
 }
 
 function renderOptions(options: string[]): string {
   return options.map((opt) => `- ${opt}`).join("\n");
+}
+
+function clearReminder(phone: string) {
+  const t = reminderTimers.get(phone);
+  if (t) {
+    clearTimeout(t);
+    reminderTimers.delete(phone);
+  }
+}
+
+function scheduleReminder(phone: string, question: string, options: string[], config: BotConfig) {
+  clearReminder(phone);
+  const delayMs = (config.timeouts?.question_seconds || 0) * 1000;
+  if (!delayMs) return;
+  const timer = setTimeout(async () => {
+    await sendMessage({
+      to: phone,
+      body: `Toujours là ? Merci de répondre à : ${question}\n${renderOptions(options)}`,
+    });
+  }, delayMs);
+  reminderTimers.set(phone, timer);
 }
 
 async function askNextQuestion(state: ConversationState, config: BotConfig) {
@@ -19,6 +42,7 @@ async function askNextQuestion(state: ConversationState, config: BotConfig) {
   const message = `${next.label}\n${renderOptions(next.options)}`;
   await sendMessage({ to: state.phone, body: message });
   await updateSession(state.phone, { currentQuestionIndex: idx });
+  scheduleReminder(state.phone, next.label, next.options, config);
 }
 
 function isValidAnswer(answer: string, options: string[]): string | null {
@@ -29,11 +53,13 @@ function isValidAnswer(answer: string, options: string[]): string | null {
 
 async function handleQualified(state: ConversationState, config: BotConfig) {
   await updateSession(state.phone, { status: "awaiting_preference" });
+  clearReminder(state.phone);
   await sendMessage({ to: state.phone, body: config.messages.qualified_intro });
 }
 
 async function handleDisqualified(state: ConversationState, config: BotConfig) {
   await updateSession(state.phone, { status: "disqualified" });
+  clearReminder(state.phone);
   await sendMessage({ to: state.phone, body: config.messages.disqualified });
   await sendMessage({ to: state.phone, body: "Veux-tu que je t'envoie la ressource ? (oui/non)" });
 }
@@ -106,6 +132,7 @@ export async function handleIncoming(message: IncomingMessage, config: BotConfig
     return;
   }
 
+  clearReminder(phone);
   const answers = { ...state.answers, [currentQ.id]: validAnswer };
   const score = computeTotalScore({ ...state, answers }, config);
   await updateSession(phone, { answers, score });

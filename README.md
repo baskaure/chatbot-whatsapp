@@ -139,3 +139,10 @@ Pour tester le cas "non qualifié", utilisez des réponses avec un score faible 
 
 Le bot devrait envoyer le message de disqualification + lien ressource.
 
+## Checklist prod
+- Env vars : `TWILIO_ACCOUNT_SID`, `TWILIO_AUTH_TOKEN`, `TWILIO_WHATSAPP_FROM` ou `TWILIO_MESSAGING_SERVICE_SID`, `PUBLIC_URL`, `BOT_CONFIG_PATH`.
+- Persistance état : `REDIS_URL` recommandé (sinon mémoire). `DEDUP_TTL_SECONDS` optionnel (défaut 300s).
+- Sauvegarde : `GSHEET_ID`, `GCP_SERVICE_ACCOUNT_KEY` (base64 JSON service account), `GSHEET_TAB` (défaut Conversations). Le JSONL local n’est pas durable sur Render.
+- Liens : mettre vos vrais `messages.calendly_link` et `messages.resource_link` dans `config/config.json`.
+- Webhook Twilio : `POST {PUBLIC_URL}/webhook/whatsapp`.
+
