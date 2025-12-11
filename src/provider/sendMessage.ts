@@ -1,4 +1,4 @@
-import { Twilio } from "twilio";
+import twilio from "twilio";
 import type { MessageListInstanceCreateOptions } from "twilio/lib/rest/api/v2010/account/message.js";
 import { OutgoingMessage } from "../types.js";
 
@@ -10,7 +10,7 @@ const {
 } = process.env;
 
 const twilioClient =
-  TWILIO_ACCOUNT_SID && TWILIO_AUTH_TOKEN ? new Twilio(TWILIO_ACCOUNT_SID, TWILIO_AUTH_TOKEN) : null;
+  TWILIO_ACCOUNT_SID && TWILIO_AUTH_TOKEN ? twilio(TWILIO_ACCOUNT_SID, TWILIO_AUTH_TOKEN) : null;
 
 export async function sendMessage(msg: OutgoingMessage): Promise<void> {
   if (!twilioClient) {
