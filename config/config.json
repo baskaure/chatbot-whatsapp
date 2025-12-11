@@ -1,6 +1,6 @@
 {
   "welcome": "Salut, ici l’assistant de Kingdom Ads. Je vais te poser quelques questions rapides pour voir comment on peut t’aider. Tu es prêt ?",
-  "start_keywords": ["ok", "oui", "ready", "go"],
+  "start_keywords": ["ok", "oui", "ready", "go", "coach", "camperx", "bonjour", "hello"],
   "questions": [
     {
       "id": "sector",
