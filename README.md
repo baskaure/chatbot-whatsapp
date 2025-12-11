@@ -144,5 +144,5 @@ Le bot devrait envoyer le message de disqualification + lien ressource.
 - Persistance état : `REDIS_URL` recommandé (sinon mémoire). `DEDUP_TTL_SECONDS` optionnel (défaut 300s).
 - Sauvegarde : `GSHEET_ID`, `GCP_SERVICE_ACCOUNT_KEY` (base64 JSON service account), `GSHEET_TAB` (défaut Conversations). Le JSONL local n’est pas durable sur Render.
 - Liens : mettre vos vrais `messages.calendly_link` et `messages.resource_link` dans `config/config.json`.
-- Webhook Twilio : `POST {PUBLIC_URL}/webhook/whatsapp`.
+- Webhook Twilio : `POST {PUBLIC_URL}/webhook/whatsapp`.j
 
