@@ -13,7 +13,7 @@ const app = express();
 const port = process.env.PORT || 3000;
 const config = loadConfig();
 const require = createRequire(import.meta.url);
-const { validateRequest } = require("twilio").webhooks || { validateRequest: undefined };
+const twilio = require("twilio");
 
 app.use(bodyParser.json());
 app.use(bodyParser.urlencoded({ extended: true }));
@@ -28,11 +28,9 @@ app.post("/webhook/whatsapp", async (req, res) => {
   const twilioAuth = process.env.TWILIO_AUTH_TOKEN;
   const publicUrl = process.env.PUBLIC_URL;
   const signature = req.headers["x-twilio-signature"] as string | undefined;
-  if (twilioAuth && publicUrl && signature) {
-    const isValid = validateRequest(twilioAuth, signature, `${publicUrl}${req.originalUrl}`, req.body);
-    if (!isValid) {
-      return res.status(403).json({ error: "Invalid signature" });
-    }
+  if (twilioAuth && publicUrl && signature && typeof twilio?.validateRequest === "function") {
+    const isValid = twilio.validateRequest(twilioAuth, signature, `${publicUrl}${req.originalUrl}`, req.body);
+    if (!isValid) return res.status(403).json({ error: "Invalid signature" });
   }
 
   // Adapt parsing according to provider payload
