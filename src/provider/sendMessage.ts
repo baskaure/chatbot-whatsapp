@@ -18,10 +18,10 @@ export async function sendMessage(msg: OutgoingMessage): Promise<void> {
     return;
   }
 
-  const payload: Record<string, string> = {
+  const payload = {
     to: msg.to.startsWith("whatsapp:") ? msg.to : `whatsapp:${msg.to}`,
     body: msg.body,
-  };
+  } as const;
 
   if (TWILIO_MESSAGING_SERVICE_SID) {
     payload.messagingServiceSid = TWILIO_MESSAGING_SERVICE_SID;
