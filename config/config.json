@@ -1,0 +1,48 @@
+{
+  "welcome": "Salut, ici l’assistant de Kingdom Ads. Je vais te poser quelques questions rapides pour voir comment on peut t’aider. Tu es prêt ?",
+  "start_keywords": ["ok", "oui", "ready", "go"],
+  "questions": [
+    {
+      "id": "sector",
+      "label": "Secteur d’activité",
+      "options": ["Coach", "Infopreneur", "SaaS", "BTP", "Autre"],
+      "scores": { "Coach": 2, "Infopreneur": 2, "SaaS": 3, "BTP": 1, "Autre": 1 }
+    },
+    {
+      "id": "revenue",
+      "label": "Chiffre d’affaires mensuel actuel",
+      "options": ["0–5k", "5–20k", "20k–50k", "50k+"],
+      "scores": { "0–5k": 0, "5–20k": 1, "20k–50k": 3, "50k+": 3 }
+    },
+    {
+      "id": "ads",
+      "label": "Utilisation actuelle de la publicité",
+      "options": ["Oui", "Testé", "Non"],
+      "scores": { "Oui": 2, "Testé": 1, "Non": 0 }
+    },
+    {
+      "id": "goal",
+      "label": "Objectif principal sur 90 jours",
+      "options": ["Plus de leads", "Stabiliser le CA", "Passer un cap (x2, x3)", "Autre"],
+      "scores": { "Plus de leads": 2, "Stabiliser le CA": 1, "Passer un cap (x2, x3)": 2, "Autre": 1 }
+    },
+    {
+      "id": "budget",
+      "label": "Budget publicitaire & d’accompagnement disponible",
+      "options": ["Oui je peux", "À voir", "Non"],
+      "scores": { "Oui je peux": 3, "À voir": 1, "Non": 0 }
+    }
+  ],
+  "qualified_threshold": 7,
+  "messages": {
+    "qualified_intro": "Parfait, tu as le profil idéal pour un audit complet de ton système marketing. Je te propose un appel stratégique de 30 min. Tu préfères matin ou après-midi ?",
+    "calendly_link": "https://calendly.com/votre-lien?name={name}&phone={phone}",
+    "disqualified": "Merci pour tes réponses. Pour le moment, on ne peut pas t’accompagner efficacement. Mais je peux t’envoyer une ressource pour t’aider à structurer tes premières bases. Tu veux que je te l’envoie ?",
+    "resource_link": "https://votre-pdf-ou-video"
+  },
+  "timeouts": {
+    "question_seconds": 600,
+    "max_retries": 2
+  }
+}
+
