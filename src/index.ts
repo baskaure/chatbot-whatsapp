@@ -1,7 +1,7 @@
 import express from "express";
 import bodyParser from "body-parser";
 import { v4 as uuid } from "uuid";
-import { validateRequest } from "twilio/lib/webhooks/webhooks.js";
+import { createRequire } from "module";
 import dotenv from "dotenv";
 import { loadConfig } from "./config.js";
 import { handleIncoming } from "./flow.js";
@@ -12,6 +12,8 @@ dotenv.config();
 const app = express();
 const port = process.env.PORT || 3000;
 const config = loadConfig();
+const require = createRequire(import.meta.url);
+const { validateRequest } = require("twilio").webhooks || { validateRequest: undefined };
 
 app.use(bodyParser.json());
 app.use(bodyParser.urlencoded({ extended: true }));

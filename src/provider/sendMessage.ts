@@ -1,6 +1,10 @@
-import twilio from "twilio";
-import type { MessageListInstanceCreateOptions } from "twilio/lib/rest/api/v2010/account/message.js";
+import { createRequire } from "module";
 import { OutgoingMessage } from "../types.js";
+
+const require = createRequire(import.meta.url);
+// twilio est CommonJS : on le charge via require pour éviter les soucis d'import ESM/CJS.
+// eslint-disable-next-line @typescript-eslint/no-var-requires
+const twilio: typeof import("twilio") = require("twilio");
 
 const {
   TWILIO_ACCOUNT_SID,
@@ -19,7 +23,7 @@ export async function sendMessage(msg: OutgoingMessage): Promise<void> {
     return;
   }
 
-  const payload: MessageListInstanceCreateOptions = {
+  const payload: any = {
     to: msg.to.startsWith("whatsapp:") ? msg.to : `whatsapp:${msg.to}`,
     body: msg.body,
   } as const;
