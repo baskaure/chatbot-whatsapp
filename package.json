@@ -12,7 +12,10 @@
     "express": "^4.19.2",
     "body-parser": "^1.20.3",
     "dotenv": "^16.4.5",
-    "uuid": "^11.0.3"
+    "uuid": "^11.0.3",
+    "twilio": "^5.4.3",
+    "ioredis": "^5.4.2",
+    "googleapis": "^141.0.0"
   },
   "devDependencies": {
     "@types/express": "^4.17.21",

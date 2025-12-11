@@ -30,9 +30,10 @@ export interface ConversationState {
   currentQuestionIndex: number;
   answers: Record<string, string>;
   score: number;
-  status: "collecting" | "qualified" | "disqualified";
+  status: "collecting" | "awaiting_preference" | "qualified" | "disqualified";
   calendlySent: boolean;
   resourceSent: boolean;
+  calendlyPreference: string | null;
 }
 
 export interface IncomingMessage {

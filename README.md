@@ -3,8 +3,17 @@
 ## Démarrage rapide
 1) Installe Node 18+  
 2) `npm install`  
-3) `npm run dev`  
+3) Configure `.env` (voir ci-dessous)  
+4) `npm run dev`  
 Le serveur écoute sur `PORT` (3000 par défaut) avec un webhook `POST /webhook/whatsapp`.
+
+### Variables d’environnement clés
+- `PUBLIC_URL` : URL publique du webhook (https://.../webhook/whatsapp) pour la validation Twilio  
+- `TWILIO_ACCOUNT_SID`, `TWILIO_AUTH_TOKEN`, `TWILIO_MESSAGING_SERVICE_SID` ou `TWILIO_WHATSAPP_FROM`  
+- `REDIS_URL` : stockage des sessions (fallback mémoire si absent)  
+- `SESSION_TTL_SECONDS` : durée de vie des sessions (par défaut 6h)  
+- `GSHEET_ID`, `GSHEET_TAB` (optionnel), `GCP_SERVICE_ACCOUNT_KEY` (base64 du JSON service account)  
+- `BOT_CONFIG_PATH` : chemin alternatif vers le fichier de config
 
 ## Configuration sans code
 - `config/config.json` contient : questions, options, scores, seuil, messages, liens.  
