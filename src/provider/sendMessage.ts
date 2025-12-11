@@ -1,4 +1,5 @@
 import { Twilio } from "twilio";
+import type { MessageListInstanceCreateOptions } from "twilio/lib/rest/api/v2010/account/message.js";
 import { OutgoingMessage } from "../types.js";
 
 const {
@@ -18,7 +19,7 @@ export async function sendMessage(msg: OutgoingMessage): Promise<void> {
     return;
   }
 
-  const payload = {
+  const payload: MessageListInstanceCreateOptions = {
     to: msg.to.startsWith("whatsapp:") ? msg.to : `whatsapp:${msg.to}`,
     body: msg.body,
   } as const;
