@@ -101,17 +101,24 @@ export async function handleIncoming(message: IncomingMessage, config: BotConfig
     return;
   }
 
-  // If disqualified, ignore further
+  // If disqualified, handle resource request
   if (state.status === "disqualified") {
     const normalized = normalize(body);
-    if (normalized === "oui" || normalized === "ok") {
+    const acceptKeywords = ["oui", "ok", "yes", "d'accord", "daccord", "envoyer", "envoie", "je veux", "jeveux"];
+    if (acceptKeywords.some((kw) => normalized.includes(kw))) {
       await sendMessage({ to: phone, body: config.messages.resource_link });
       await updateSession(phone, { resourceSent: true });
       const persisted = await getOrCreateSession(phone);
       persistConversation(persisted);
       return;
     }
-    await sendMessage({ to: phone, body: "Conversation close. Réponds 'oui' si tu veux la ressource." });
+    // Si la ressource a déjà été envoyée, on ignore les messages suivants
+    if (state.resourceSent) {
+      await sendMessage({ to: phone, body: "La ressource t'a déjà été envoyée. Bonne continuation !" });
+      return;
+    }
+    // Sinon, on rappelle qu'il faut répondre "oui"
+    await sendMessage({ to: phone, body: "Réponds 'oui' si tu veux que je t'envoie la ressource." });
     return;
   }
 
