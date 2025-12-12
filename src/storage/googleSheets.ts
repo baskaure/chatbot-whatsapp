@@ -31,6 +31,45 @@ function getClient(): sheets_v4.Sheets | null {
   }
 }
 
+async function ensureSheetExists(client: sheets_v4.Sheets, sheetId: string, tabName: string): Promise<boolean> {
+  try {
+    const metadata = await client.spreadsheets.get({ spreadsheetId: sheetId });
+    const exists = metadata.data.sheets?.some((sheet) => sheet.properties?.title === tabName);
+    if (exists) return true;
+    // Créer l'onglet s'il n'existe pas
+    await client.spreadsheets.batchUpdate({
+      spreadsheetId: sheetId,
+      requestBody: {
+        requests: [
+          {
+            addSheet: {
+              properties: {
+                title: tabName,
+              },
+            },
+          },
+        ],
+      },
+    });
+    // Ajouter les en-têtes
+    await client.spreadsheets.values.update({
+      spreadsheetId: sheetId,
+      range: `${tabName}!A1:H1`,
+      valueInputOption: "RAW",
+      requestBody: {
+        values: [["Date", "Téléphone", "Réponses", "Score", "Statut", "Calendly envoyé", "Ressource envoyée", "Préférence"]],
+      },
+    });
+    // eslint-disable-next-line no-console
+    console.log(`[SHEETS] Onglet "${tabName}" créé avec en-têtes`);
+    return true;
+  } catch (err: any) {
+    // eslint-disable-next-line no-console
+    console.error(`[SHEETS] Erreur création onglet "${tabName}":`, err?.response?.data || err?.message || err);
+    return false;
+  }
+}
+
 export async function persistToSheet(state: ConversationState): Promise<boolean> {
   const client = getClient();
   if (!client || !SHEET_ID) {
@@ -39,6 +78,8 @@ export async function persistToSheet(state: ConversationState): Promise<boolean>
     return false;
   }
   try {
+    // S'assurer que l'onglet existe
+    await ensureSheetExists(client, SHEET_ID, SHEET_TAB);
     const values = [
       [
         new Date().toISOString(),
