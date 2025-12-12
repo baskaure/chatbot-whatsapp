@@ -36,7 +36,7 @@
   "qualified_threshold": 7,
   "messages": {
     "qualified_intro": "Parfait, tu as le profil idéal pour un audit complet de ton système marketing. Je te propose un appel stratégique de 30 min. Tu préfères matin ou après-midi ?",
-    "calendly_link": "https://calendly.com/votre-lien?name={name}&phone={phone}",
+    "calendly_link": "https://calendly.com/agence-kingdomads/conseils-et-pubs-marketwins?name={name}&email={phone}",
     "disqualified": "Merci pour tes réponses. Pour le moment, on ne peut pas t’accompagner efficacement. Mais je peux t’envoyer une ressource pour t’aider à structurer tes premières bases. Tu veux que je te l’envoie ?",
     "resource_link": "https://votre-pdf-ou-video"
   },
