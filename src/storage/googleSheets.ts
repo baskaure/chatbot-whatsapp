@@ -19,24 +19,31 @@ function getClient(): sheets_v4.Sheets | null {
 export async function persistToSheet(state: ConversationState): Promise<boolean> {
   const client = getClient();
   if (!client || !SHEET_ID) return false;
-  const values = [
-    [
-      new Date().toISOString(),
-      state.phone,
-      JSON.stringify(state.answers),
-      state.score,
-      state.status,
-      state.calendlySent,
-      state.resourceSent,
-      state.calendlyPreference ?? "",
-    ],
-  ];
-  await client.spreadsheets.values.append({
-    spreadsheetId: SHEET_ID,
-    range: `${SHEET_TAB}!A1`,
-    valueInputOption: "RAW",
-    requestBody: { values },
-  });
-  return true;
+  try {
+    const values = [
+      [
+        new Date().toISOString(),
+        state.phone,
+        JSON.stringify(state.answers),
+        state.score,
+        state.status,
+        state.calendlySent,
+        state.resourceSent,
+        state.calendlyPreference ?? "",
+      ],
+    ];
+    await client.spreadsheets.values.append({
+      spreadsheetId: SHEET_ID,
+      range: `${SHEET_TAB}!A:A`,
+      valueInputOption: "RAW",
+      insertDataOption: "INSERT_ROWS",
+      requestBody: { values },
+    });
+    return true;
+  } catch (err) {
+    // eslint-disable-next-line no-console
+    console.error("Erreur export Google Sheets:", err);
+    return false;
+  }
 }
 
