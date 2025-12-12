@@ -7,6 +7,7 @@ import { loadConfig } from "./config.js";
 import { handleIncoming } from "./flow.js";
 import { IncomingMessage } from "./types.js";
 import { isDuplicate } from "./dedup.js";
+import { resetSession } from "./sessionStore.js";
 
 dotenv.config();
 
@@ -21,6 +22,24 @@ app.use(bodyParser.urlencoded({ extended: true }));
 
 app.get("/health", (_req, res) => {
   res.json({ status: "ok" });
+});
+
+// Endpoint admin pour réinitialiser une conversation
+app.post("/admin/reset", async (req, res) => {
+  const phone = req.body?.phone || req.query?.phone;
+  if (!phone) {
+    return res.status(400).json({ error: "Paramètre 'phone' requis" });
+  }
+  try {
+    await resetSession(phone);
+    // eslint-disable-next-line no-console
+    console.log(`[ADMIN] Session réinitialisée pour ${phone}`);
+    res.json({ ok: true, message: `Session réinitialisée pour ${phone}` });
+  } catch (err) {
+    // eslint-disable-next-line no-console
+    console.error("Erreur réinitialisation session:", err);
+    res.status(500).json({ error: "Erreur lors de la réinitialisation" });
+  }
 });
 
 // Webhook endpoint to plug with WhatsApp provider
