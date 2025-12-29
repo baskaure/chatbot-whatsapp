@@ -7,6 +7,21 @@
 4) `npm run dev`  
 Le serveur écoute sur `PORT` (3000 par défaut) avec un webhook `POST /webhook/whatsapp`.
 
+## Panel Admin
+
+Un panel d'administration complet est disponible pour gérer le bot sans toucher au code :
+
+**Accès :** `http://localhost:3000/admin`
+
+**Fonctionnalités :**
+- 📊 Statistiques en temps réel (prospects, décisions, engagement)
+- ⚙️ Configuration complète du bot (questions, scores, messages, règles)
+- 👥 Gestion des prospects (visualisation, détails, réinitialisation)
+- 💬 Historique des conversations
+- 🎯 Actions (envoi de messages pré-remplis, réinitialisation de sessions)
+
+Voir `admin/README.md` pour plus de détails.
+
 ### Variables d’environnement clés
 - `PUBLIC_URL` : URL publique du webhook (https://.../webhook/whatsapp) pour la validation Twilio  
 - `TWILIO_ACCOUNT_SID`, `TWILIO_AUTH_TOKEN`, `TWILIO_MESSAGING_SERVICE_SID` ou `TWILIO_WHATSAPP_FROM`  

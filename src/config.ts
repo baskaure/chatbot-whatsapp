@@ -11,3 +11,8 @@ export function loadConfig(): BotConfig {
   return parsed;
 }
 
+export function saveConfig(config: BotConfig): void {
+  const resolved = path.resolve(CONFIG_PATH);
+  fs.writeFileSync(resolved, JSON.stringify(config, null, 2), "utf8");
+}
+

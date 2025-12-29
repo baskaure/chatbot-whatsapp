@@ -1,0 +1,290 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Panel Admin - Bot WhatsApp</title>
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+    <div class="container">
+        <header>
+            <h1>Panel Admin - Bot WhatsApp</h1>
+            <div class="header-actions">
+                <button id="refreshBtn" class="btn btn-secondary">Actualiser</button>
+                <button id="saveConfigBtn" class="btn btn-primary">Sauvegarder</button>
+            </div>
+        </header>
+
+        <nav class="tabs">
+            <button class="tab-btn active" data-tab="stats">Statistiques</button>
+            <button class="tab-btn" data-tab="config">Configuration</button>
+            <button class="tab-btn" data-tab="prospects">Prospects</button>
+            <button class="tab-btn" data-tab="answers">Réponses</button>
+            <button class="tab-btn" data-tab="conversations">Conversations</button>
+            <button class="tab-btn" data-tab="actions">Actions</button>
+        </nav>
+
+        <!-- Onglet Statistiques -->
+        <div id="stats-tab" class="tab-content active">
+            <div class="stats-grid">
+                <div class="stat-card">
+                    <h3>Total Prospects</h3>
+                    <p class="stat-value" id="stat-total-prospects">0</p>
+                </div>
+                <div class="stat-card">
+                    <h3>Conversations</h3>
+                    <p class="stat-value" id="stat-total-conversations">0</p>
+                </div>
+                <div class="stat-card">
+                    <h3>Réponses</h3>
+                    <p class="stat-value" id="stat-total-answers">0</p>
+                </div>
+                <div class="stat-card">
+                    <h3>Score Moyen</h3>
+                    <p class="stat-value" id="stat-avg-score">0</p>
+                </div>
+            </div>
+
+            <div class="stats-section">
+                <h2>Décisions</h2>
+                <div class="stats-grid">
+                    <div class="stat-card decision-rdv">
+                        <h3>RDV</h3>
+                        <p class="stat-value" id="stat-rdv">0</p>
+                    </div>
+                    <div class="stat-card decision-humain">
+                        <h3>Humain</h3>
+                        <p class="stat-value" id="stat-humain">0</p>
+                    </div>
+                    <div class="stat-card decision-nurturing">
+                        <h3>Nurturing</h3>
+                        <p class="stat-value" id="stat-nurturing">0</p>
+                    </div>
+                    <div class="stat-card decision-sortie">
+                        <h3>Sortie</h3>
+                        <p class="stat-value" id="stat-sortie">0</p>
+                    </div>
+                </div>
+            </div>
+
+            <div class="stats-section">
+                <h2>Niveau d'Engagement</h2>
+                <div class="stats-grid">
+                    <div class="stat-card engagement-high">
+                        <h3>Élevé</h3>
+                        <p class="stat-value" id="stat-engagement-high">0</p>
+                    </div>
+                    <div class="stat-card engagement-medium">
+                        <h3>Moyen</h3>
+                        <p class="stat-value" id="stat-engagement-medium">0</p>
+                    </div>
+                    <div class="stat-card engagement-low">
+                        <h3>Faible</h3>
+                        <p class="stat-value" id="stat-engagement-low">0</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Onglet Configuration -->
+        <div id="config-tab" class="tab-content">
+            <div class="config-section">
+                <h2>Message de Bienvenue</h2>
+                <p class="help-text">Message envoyé au prospect lors du premier contact</p>
+                <textarea id="config-welcome" class="config-input" rows="3" placeholder="Salut, ici l'assistant de Kingdom Ads..."></textarea>
+            </div>
+
+            <div class="config-section">
+                <h2>Mots-clés de Démarrage</h2>
+                <p class="help-text">Mots qui déclenchent le démarrage du questionnaire</p>
+                <input type="text" id="config-start-keywords" class="config-input" placeholder="ok, oui, ready, go">
+                <small>Séparés par des virgules</small>
+            </div>
+
+            <div class="config-section">
+                <h2>Seuil de Qualification</h2>
+                <p class="help-text">Score minimum requis pour qu'un prospect soit considéré comme qualifié</p>
+                <input type="number" id="config-qualified-threshold" class="config-input" min="0" placeholder="7">
+            </div>
+
+            <div class="config-section">
+                <h2>Règles de Décision</h2>
+                <p class="help-text">Définissez les scores pour chaque type de décision automatique</p>
+                <div class="decision-rules">
+                    <div class="rule-item">
+                        <label>RDV - Score minimum</label>
+                        <p class="field-help">Score minimum pour proposer un rendez-vous</p>
+                        <input type="number" id="rule-rdv-min" class="config-input" min="0" placeholder="9">
+                    </div>
+                    <div class="rule-item">
+                        <label>Humain - Score minimum</label>
+                        <p class="field-help">Score minimum pour transférer à un conseiller</p>
+                        <input type="number" id="rule-humain-min" class="config-input" min="0" placeholder="7">
+                    </div>
+                    <div class="rule-item">
+                        <label>Nurturing - Score minimum</label>
+                        <p class="field-help">Score minimum pour le nurturing</p>
+                        <input type="number" id="rule-nurturing-min" class="config-input" min="0" placeholder="4">
+                    </div>
+                    <div class="rule-item">
+                        <label>Nurturing - Score maximum</label>
+                        <p class="field-help">Score maximum pour le nurturing</p>
+                        <input type="number" id="rule-nurturing-max" class="config-input" min="0" placeholder="6">
+                    </div>
+                    <div class="rule-item">
+                        <label>Sortie - Score maximum</label>
+                        <p class="field-help">Score maximum pour sortir le prospect</p>
+                        <input type="number" id="rule-sortie-max" class="config-input" min="0" placeholder="3">
+                    </div>
+                </div>
+            </div>
+
+            <div class="config-section">
+                <h2>Messages</h2>
+                <p class="help-text">Messages envoyés selon la décision prise</p>
+                <div class="messages-config">
+                    <div class="message-item">
+                        <label>Message RDV</label>
+                        <p class="field-help">Envoyé quand la décision est "RDV"</p>
+                        <textarea id="config-message-rdv" class="config-input" rows="3" placeholder="Parfait, tu as le profil idéal..."></textarea>
+                    </div>
+                    <div class="message-item">
+                        <label>Message Humain</label>
+                        <p class="field-help">Envoyé quand la décision est "Humain"</p>
+                        <textarea id="config-message-humain" class="config-input" rows="3" placeholder="Un de nos conseillers va te contacter..."></textarea>
+                    </div>
+                    <div class="message-item">
+                        <label>Message Nurturing</label>
+                        <p class="field-help">Envoyé quand la décision est "Nurturing"</p>
+                        <textarea id="config-message-nurturing" class="config-input" rows="3" placeholder="On va te tenir informé..."></textarea>
+                    </div>
+                    <div class="message-item">
+                        <label>Message Sortie</label>
+                        <p class="field-help">Envoyé quand la décision est "Sortie"</p>
+                        <textarea id="config-message-sortie" class="config-input" rows="3" placeholder="Merci pour tes réponses..."></textarea>
+                    </div>
+                    <div class="message-item">
+                        <label>Lien Calendly</label>
+                        <p class="field-help">Lien pour la prise de rendez-vous (utilisez {phone}, {name}, {preference} comme variables)</p>
+                        <input type="text" id="config-calendly-link" class="config-input" placeholder="https://calendly.com/...">
+                    </div>
+                    <div class="message-item">
+                        <label>Lien Ressource</label>
+                        <p class="field-help">Lien vers la ressource envoyée aux prospects non qualifiés</p>
+                        <input type="text" id="config-resource-link" class="config-input" placeholder="https://...">
+                    </div>
+                </div>
+            </div>
+
+            <div class="config-section">
+                <h2>Questions</h2>
+                <p class="help-text">Questions posées au prospect avec leurs options et scores</p>
+                <div id="questions-container"></div>
+                <button id="add-question-btn" class="btn btn-secondary">+ Ajouter une Question</button>
+            </div>
+
+            <div class="config-section">
+                <h2>Message Pré-rempli (Campagnes Publicitaires)</h2>
+                <p class="help-text">Message envoyé automatiquement lors des campagnes publicitaires</p>
+                <div class="checkbox-group">
+                    <label class="checkbox-label">
+                        <input type="checkbox" id="config-prefill-enabled"> Activer le message pré-rempli
+                    </label>
+                </div>
+                <textarea id="config-prefill-message" class="config-input" rows="3" placeholder="Salut ! Je suis l'assistant..."></textarea>
+            </div>
+        </div>
+
+        <!-- Onglet Prospects -->
+        <div id="prospects-tab" class="tab-content">
+            <div class="section-header">
+                <h2>Liste des Prospects</h2>
+                <p class="help-text">Tous les prospects avec leurs informations et décisions</p>
+            </div>
+            <div class="table-container">
+                <table id="prospects-table">
+                    <thead>
+                        <tr>
+                            <th>Téléphone</th>
+                            <th>Score</th>
+                            <th>Statut</th>
+                            <th>Décision</th>
+                            <th>Engagement</th>
+                            <th>Dernière activité</th>
+                            <th>Actions</th>
+                        </tr>
+                    </thead>
+                    <tbody id="prospects-tbody"></tbody>
+                </table>
+            </div>
+        </div>
+
+        <!-- Onglet Réponses -->
+        <div id="answers-tab" class="tab-content">
+            <div class="section-header">
+                <h2>Réponses en Temps Réel</h2>
+                <p class="help-text">Toutes les réponses données par les prospects, enregistrées en temps réel</p>
+            </div>
+            <div class="answers-container" id="answers-container">
+                <!-- Les réponses seront chargées ici -->
+            </div>
+        </div>
+
+        <!-- Onglet Conversations -->
+        <div id="conversations-tab" class="tab-content">
+            <div class="section-header">
+                <h2>Historique des Conversations</h2>
+                <p class="help-text">Toutes les conversations enregistrées</p>
+            </div>
+            <div class="table-container">
+                <table id="conversations-table">
+                    <thead>
+                        <tr>
+                            <th>Date</th>
+                            <th>Téléphone</th>
+                            <th>Score</th>
+                            <th>Statut</th>
+                            <th>Décision</th>
+                            <th>Actions</th>
+                        </tr>
+                    </thead>
+                    <tbody id="conversations-tbody"></tbody>
+                </table>
+            </div>
+        </div>
+
+        <!-- Onglet Actions -->
+        <div id="actions-tab" class="tab-content">
+            <div class="action-section">
+                <h2>Envoyer un Message Pré-rempli</h2>
+                <div class="action-form">
+                    <input type="text" id="action-phone" class="config-input" placeholder="Numéro de téléphone (ex: +33612345678)">
+                    <textarea id="action-message" class="config-input" rows="3" placeholder="Message à envoyer"></textarea>
+                    <button id="send-prefill-btn" class="btn btn-primary">Envoyer</button>
+                </div>
+            </div>
+
+            <div class="action-section">
+                <h2>Réinitialiser une Session</h2>
+                <div class="action-form">
+                    <input type="text" id="reset-phone" class="config-input" placeholder="Numéro de téléphone">
+                    <button id="reset-session-btn" class="btn btn-warning">Réinitialiser</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div id="toast" class="toast"></div>
+    <div id="modal" class="modal">
+        <div class="modal-content">
+            <span class="close-modal">&times;</span>
+            <h2 id="modal-title"></h2>
+            <div id="modal-body"></div>
+        </div>
+    </div>
+
+    <script src="app.js"></script>
+</body>
+</html>
+

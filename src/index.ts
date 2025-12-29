@@ -3,22 +3,36 @@ import bodyParser from "body-parser";
 import { v4 as uuid } from "uuid";
 import { createRequire } from "module";
 import dotenv from "dotenv";
-import { loadConfig } from "./config.js";
+import path from "path";
+import { fileURLToPath } from "url";
+import { loadConfig, saveConfig } from "./config.js";
 import { handleIncoming } from "./flow.js";
-import { IncomingMessage } from "./types.js";
+import { IncomingMessage, BotConfig } from "./types.js";
 import { isDuplicate } from "./dedup.js";
-import { resetSession } from "./sessionStore.js";
+import { resetSession, allSessions } from "./sessionStore.js";
+import { getAllProspects, getAllConversations, getAllAnswers } from "./storage/localStore.js";
 
 dotenv.config();
 
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = path.dirname(__filename);
+
 const app = express();
 const port = process.env.PORT || 3000;
-const config = loadConfig();
+let config = loadConfig();
 const require = createRequire(import.meta.url);
 const twilio = require("twilio");
 
 app.use(bodyParser.json());
 app.use(bodyParser.urlencoded({ extended: true }));
+
+// Servir les fichiers statiques du panel admin
+app.use("/admin", express.static(path.join(__dirname, "../admin")));
+
+// Route pour servir index.html du panel admin
+app.get("/admin", (_req, res) => {
+  res.sendFile(path.join(__dirname, "../admin/index.html"));
+});
 
 app.get("/health", (_req, res) => {
   res.json({ status: "ok" });
@@ -39,6 +53,146 @@ app.post("/admin/reset", async (req, res) => {
     // eslint-disable-next-line no-console
     console.error("Erreur réinitialisation session:", err);
     res.status(500).json({ error: "Erreur lors de la réinitialisation" });
+  }
+});
+
+// Endpoint pour envoyer un message pré-rempli (pour la pub)
+app.post("/admin/send-prefill", async (req, res) => {
+  const phone = req.body?.phone || req.query?.phone;
+  const message = req.body?.message || config.prefill_message?.body || config.welcome;
+  
+  if (!phone) {
+    return res.status(400).json({ error: "Paramètre 'phone' requis" });
+  }
+  
+  try {
+    const { sendMessage } = await import("./provider/sendMessage.js");
+    await sendMessage({ to: phone, body: message });
+    // eslint-disable-next-line no-console
+    console.log(`[ADMIN] Message pré-rempli envoyé à ${phone}`);
+    res.json({ ok: true, message: `Message pré-rempli envoyé à ${phone}` });
+  } catch (err) {
+    // eslint-disable-next-line no-console
+    console.error("Erreur envoi message pré-rempli:", err);
+    res.status(500).json({ error: "Erreur lors de l'envoi du message" });
+  }
+});
+
+// API Admin - Récupérer la configuration
+app.get("/api/admin/config", (_req, res) => {
+  try {
+    config = loadConfig(); // Recharger pour avoir la dernière version
+    res.json(config);
+  } catch (err) {
+    // eslint-disable-next-line no-console
+    console.error("Erreur chargement config:", err);
+    res.status(500).json({ error: "Erreur lors du chargement de la configuration" });
+  }
+});
+
+// API Admin - Sauvegarder la configuration
+app.post("/api/admin/config", (req, res) => {
+  try {
+    const newConfig = req.body as BotConfig;
+    saveConfig(newConfig);
+    config = newConfig; // Mettre à jour la config en mémoire
+    // eslint-disable-next-line no-console
+    console.log("[ADMIN] Configuration mise à jour");
+    res.json({ ok: true, message: "Configuration sauvegardée avec succès" });
+  } catch (err) {
+    // eslint-disable-next-line no-console
+    console.error("Erreur sauvegarde config:", err);
+    res.status(500).json({ error: "Erreur lors de la sauvegarde de la configuration" });
+  }
+});
+
+// API Admin - Récupérer tous les prospects
+app.get("/api/admin/prospects", (_req, res) => {
+  try {
+    const prospects = getAllProspects();
+    res.json(prospects);
+  } catch (err) {
+    // eslint-disable-next-line no-console
+    console.error("Erreur récupération prospects:", err);
+    res.status(500).json({ error: "Erreur lors de la récupération des prospects" });
+  }
+});
+
+// API Admin - Récupérer toutes les conversations
+app.get("/api/admin/conversations", (_req, res) => {
+  try {
+    const conversations = getAllConversations();
+    res.json(conversations);
+  } catch (err) {
+    // eslint-disable-next-line no-console
+    console.error("Erreur récupération conversations:", err);
+    res.status(500).json({ error: "Erreur lors de la récupération des conversations" });
+  }
+});
+
+// API Admin - Récupérer toutes les réponses
+app.get("/api/admin/answers", (_req, res) => {
+  try {
+    const answers = getAllAnswers();
+    res.json(answers);
+  } catch (err) {
+    // eslint-disable-next-line no-console
+    console.error("Erreur récupération réponses:", err);
+    res.status(500).json({ error: "Erreur lors de la récupération des réponses" });
+  }
+});
+
+// API Admin - Récupérer les sessions actives
+app.get("/api/admin/sessions", async (_req, res) => {
+  try {
+    const sessions = await allSessions();
+    res.json(sessions);
+  } catch (err) {
+    // eslint-disable-next-line no-console
+    console.error("Erreur récupération sessions:", err);
+    res.status(500).json({ error: "Erreur lors de la récupération des sessions" });
+  }
+});
+
+// API Admin - Statistiques
+app.get("/api/admin/stats", (_req, res) => {
+  try {
+    const prospects = getAllProspects();
+    const conversations = getAllConversations();
+    const answers = getAllAnswers();
+    
+    const stats = {
+      totalProspects: prospects.length,
+      totalConversations: conversations.length,
+      totalAnswers: answers.length,
+      byDecision: {
+        rdv: prospects.filter((p) => p.decision === "rdv").length,
+        humain: prospects.filter((p) => p.decision === "humain").length,
+        nurturing: prospects.filter((p) => p.decision === "nurturing").length,
+        sortie: prospects.filter((p) => p.decision === "sortie").length,
+        null: prospects.filter((p) => !p.decision).length,
+      },
+      byStatus: {
+        collecting: prospects.filter((p) => p.status === "collecting").length,
+        completed: prospects.filter((p) => p.status === "completed").length,
+        qualified: prospects.filter((p) => p.status === "qualified").length,
+        disqualified: prospects.filter((p) => p.status === "disqualified").length,
+      },
+      averageScore: prospects.length > 0
+        ? prospects.reduce((sum, p) => sum + p.score, 0) / prospects.length
+        : 0,
+      engagementLevel: {
+        high: prospects.filter((p) => p.metadata.engagementLevel === "high").length,
+        medium: prospects.filter((p) => p.metadata.engagementLevel === "medium").length,
+        low: prospects.filter((p) => p.metadata.engagementLevel === "low").length,
+      },
+    };
+    
+    res.json(stats);
+  } catch (err) {
+    // eslint-disable-next-line no-console
+    console.error("Erreur calcul statistiques:", err);
+    res.status(500).json({ error: "Erreur lors du calcul des statistiques" });
   }
 });
 

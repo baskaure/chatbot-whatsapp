@@ -23,16 +23,26 @@ async function writeState(phone: string, state: ConversationState) {
 export async function getOrCreateSession(phone: string): Promise<ConversationState> {
   const existing = await readState(phone);
   if (existing) return existing;
+  const now = new Date().toISOString();
   const session: ConversationState = {
     phone,
-    startedAt: new Date().toISOString(),
+    startedAt: now,
+    lastActivityAt: now,
     currentQuestionIndex: -1,
     answers: {},
+    answerHistory: [],
     score: 0,
     status: "collecting",
+    decision: null,
+    decisionReason: null,
     calendlySent: false,
     resourceSent: false,
     calendlyPreference: null,
+    metadata: {
+      totalQuestions: 0,
+      answeredQuestions: 0,
+      engagementLevel: "low",
+    },
   };
   await writeState(phone, session);
   return session;
