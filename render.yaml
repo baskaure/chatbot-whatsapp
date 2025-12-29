@@ -1,0 +1,20 @@
+services:
+  - type: web
+    name: whatsapp-bot
+    env: node
+    buildCommand: npm install && npm run build
+    startCommand: npm start
+    envVars:
+      - key: NODE_ENV
+        value: production
+      - key: PORT
+        value: 10000
+    # Les variables d'environnement suivantes doivent être configurées dans le dashboard Render :
+    # - TWILIO_ACCOUNT_SID
+    # - TWILIO_AUTH_TOKEN
+    # - TWILIO_MESSAGING_SERVICE_SID ou TWILIO_WHATSAPP_FROM
+    # - PUBLIC_URL (URL publique de votre service Render)
+    # - REDIS_URL (optionnel, pour la persistance des sessions)
+    # - GSHEET_ID (optionnel, pour Google Sheets)
+    # - GCP_SERVICE_ACCOUNT_KEY (optionnel, pour Google Sheets)
+
