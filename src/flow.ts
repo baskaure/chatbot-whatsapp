@@ -152,19 +152,8 @@ export async function handleIncoming(message: IncomingMessage, config: BotConfig
   const body = message.body || "";
   const phone = message.from;
   
-  // Récupérer ou créer une session fraîche
-  let state = await getOrCreateSession(phone);
-  
-  // Si la session a un statut "disqualified" ou "completed", on la réinitialise complètement
-  // pour permettre de recommencer la conversation
-  if (state.status === "disqualified" || state.status === "completed") {
-    // Réinitialiser la session
-    const { resetSession } = await import("./sessionStore.js");
-    await resetSession(phone);
-    
-    // Créer une nouvelle session fraîche
-    state = await getOrCreateSession(phone);
-  }
+  // Récupérer ou créer une session
+  const state = await getOrCreateSession(phone);
   
   // Mettre à jour la dernière activité
   await updateSession(phone, { lastActivityAt: new Date().toISOString() });
@@ -173,26 +162,35 @@ export async function handleIncoming(message: IncomingMessage, config: BotConfig
   const { updateProspectProfile } = await import("./storage/localStore.js");
   updateProspectProfile(phone, state);
 
-  // Step 1: start flow
-  if (state.currentQuestionIndex === -1 && state.status === "collecting") {
+  // PRIORITÉ 1: Vérifier d'abord les statuts spéciaux (disqualified, awaiting_preference)
+  // AVANT de vérifier le démarrage, pour éviter que "oui" déclenche un redémarrage
+
+  // If disqualified, handle resource request
+  if (state.status === "disqualified") {
     const normalized = normalize(body);
-    const shouldStart = config.start_keywords.some((kw) => normalized.includes(kw));
-    if (!shouldStart) {
-      await sendMessage({ to: phone, body: config.welcome });
+    const acceptKeywords = ["oui", "ok", "yes", "d'accord", "daccord", "envoyer", "envoie", "je veux", "jeveux"];
+    if (acceptKeywords.some((kw) => normalized.includes(kw))) {
+      // Envoyer la ressource
+      await sendMessage({ to: phone, body: config.messages.resource_link });
+      await updateSession(phone, { 
+        resourceSent: true,
+        status: "completed", // Marquer comme terminé après envoi de la ressource
+        lastActivityAt: new Date().toISOString(),
+      });
+      const persisted = await getOrCreateSession(phone);
+      persistConversation(persisted);
+      
+      // Mettre à jour la fiche prospect
+      updateProspectProfile(phone, persisted);
       return;
     }
-    await sendMessage({ to: phone, body: "Super, on commence." });
-    
-    // Initialiser les métadonnées
-    await updateSession(phone, {
-      metadata: {
-        ...state.metadata,
-        totalQuestions: config.questions.length,
-      },
-    });
-    
-    const refreshed = await getOrCreateSession(phone);
-    await askNextQuestion(refreshed, config);
+    // Si la ressource a déjà été envoyée, on ignore les messages suivants
+    if (state.resourceSent) {
+      await sendMessage({ to: phone, body: "La ressource t'a déjà été envoyée. Bonne continuation !" });
+      return;
+    }
+    // Sinon, on rappelle qu'il faut répondre "oui"
+    await sendMessage({ to: phone, body: "Réponds 'oui' si tu veux que je t'envoie la ressource." });
     return;
   }
 
@@ -222,27 +220,28 @@ export async function handleIncoming(message: IncomingMessage, config: BotConfig
     return;
   }
 
-  // If disqualified, handle resource request
-  if (state.status === "disqualified") {
+  // Step 1: start flow
+  // IMPORTANT: Ne pas démarrer si le statut est "disqualified" ou "awaiting_preference"
+  // car le prospect est en train de gérer la ressource ou le calendly
+  if (state.currentQuestionIndex === -1 && state.status === "collecting") {
     const normalized = normalize(body);
-    const acceptKeywords = ["oui", "ok", "yes", "d'accord", "daccord", "envoyer", "envoie", "je veux", "jeveux"];
-    if (acceptKeywords.some((kw) => normalized.includes(kw))) {
-      await sendMessage({ to: phone, body: config.messages.resource_link });
-      await updateSession(phone, { 
-        resourceSent: true,
-        lastActivityAt: new Date().toISOString(),
-      });
-      const persisted = await getOrCreateSession(phone);
-      persistConversation(persisted);
+    const shouldStart = config.start_keywords.some((kw) => normalized.includes(kw));
+    if (!shouldStart) {
+      await sendMessage({ to: phone, body: config.welcome });
       return;
     }
-    // Si la ressource a déjà été envoyée, on ignore les messages suivants
-    if (state.resourceSent) {
-      await sendMessage({ to: phone, body: "La ressource t'a déjà été envoyée. Bonne continuation !" });
-      return;
-    }
-    // Sinon, on rappelle qu'il faut répondre "oui"
-    await sendMessage({ to: phone, body: "Réponds 'oui' si tu veux que je t'envoie la ressource." });
+    await sendMessage({ to: phone, body: "Super, on commence." });
+    
+    // Initialiser les métadonnées
+    await updateSession(phone, {
+      metadata: {
+        ...state.metadata,
+        totalQuestions: config.questions.length,
+      },
+    });
+    
+    const refreshed = await getOrCreateSession(phone);
+    await askNextQuestion(refreshed, config);
     return;
   }
 
