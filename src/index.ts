@@ -118,7 +118,8 @@ app.post("/admin/send-prefill", async (req, res) => {
 // API Admin - Récupérer la configuration
 app.get("/api/admin/config", (_req, res) => {
   try {
-    config = loadConfig(); // Recharger pour avoir la dernière version
+    // Utiliser la config en mémoire (toujours à jour après sauvegarde)
+    // Ne pas recharger depuis le fichier pour éviter d'écraser les modifications
     res.json(config);
   } catch (err) {
     // eslint-disable-next-line no-console
@@ -131,10 +132,18 @@ app.get("/api/admin/config", (_req, res) => {
 app.post("/api/admin/config", (req, res) => {
   try {
     const newConfig = req.body as BotConfig;
+    
+    // Sauvegarder dans le fichier
     saveConfig(newConfig);
-    config = newConfig; // Mettre à jour la config en mémoire
+    
+    // Mettre à jour la config en mémoire IMMÉDIATEMENT
+    config = newConfig;
+    
     // eslint-disable-next-line no-console
-    console.log("[ADMIN] Configuration mise à jour");
+    console.log("[ADMIN] Configuration sauvegardée et mise à jour en mémoire");
+    // eslint-disable-next-line no-console
+    console.log("[ADMIN] Nombre de questions:", newConfig.questions.length);
+    
     res.json({ ok: true, message: "Configuration sauvegardée avec succès" });
   } catch (err) {
     // eslint-disable-next-line no-console

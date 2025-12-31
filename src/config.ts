@@ -13,6 +13,14 @@ export function loadConfig(): BotConfig {
 
 export function saveConfig(config: BotConfig): void {
   const resolved = path.resolve(CONFIG_PATH);
+  // S'assurer que le dossier existe
+  const dir = path.dirname(resolved);
+  if (!fs.existsSync(dir)) {
+    fs.mkdirSync(dir, { recursive: true });
+  }
+  // Sauvegarder avec formatage JSON propre
   fs.writeFileSync(resolved, JSON.stringify(config, null, 2), "utf8");
+  // eslint-disable-next-line no-console
+  console.log(`[CONFIG] Configuration sauvegardée dans ${resolved}`);
 }
 
