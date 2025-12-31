@@ -38,13 +38,19 @@ app.get("/health", (_req, res) => {
   res.json({ status: "ok" });
 });
 
+// Normaliser le numéro de téléphone (enlever whatsapp: si présent)
+function normalizePhone(phone: string): string {
+  return phone.replace(/^whatsapp:/i, "").trim();
+}
+
 // Endpoint admin pour réinitialiser une conversation
 app.post("/admin/reset", async (req, res) => {
-  const phone = req.body?.phone || req.query?.phone;
-  if (!phone) {
+  const phoneRaw = req.body?.phone || req.query?.phone;
+  if (!phoneRaw) {
     return res.status(400).json({ error: "Paramètre 'phone' requis" });
   }
   try {
+    const phone = normalizePhone(phoneRaw);
     await resetSession(phone);
     // eslint-disable-next-line no-console
     console.log(`[ADMIN] Session réinitialisée pour ${phone}`);
@@ -110,11 +116,13 @@ app.post("/api/admin/config", (req, res) => {
 app.get("/api/admin/prospects", (_req, res) => {
   try {
     const prospects = getAllProspects();
+    // eslint-disable-next-line no-console
+    console.log(`[API] Récupération de ${prospects.length} prospects`);
     res.json(prospects);
   } catch (err) {
     // eslint-disable-next-line no-console
     console.error("Erreur récupération prospects:", err);
-    res.status(500).json({ error: "Erreur lors de la récupération des prospects" });
+    res.status(500).json({ error: "Erreur lors de la récupération des prospects", details: String(err) });
   }
 });
 
@@ -134,11 +142,13 @@ app.get("/api/admin/conversations", (_req, res) => {
 app.get("/api/admin/answers", (_req, res) => {
   try {
     const answers = getAllAnswers();
+    // eslint-disable-next-line no-console
+    console.log(`[API] Récupération de ${answers.length} réponses`);
     res.json(answers);
   } catch (err) {
     // eslint-disable-next-line no-console
     console.error("Erreur récupération réponses:", err);
-    res.status(500).json({ error: "Erreur lors de la récupération des réponses" });
+    res.status(500).json({ error: "Erreur lors de la récupération des réponses", details: String(err) });
   }
 });
 

@@ -153,8 +153,12 @@ export async function handleIncoming(message: IncomingMessage, config: BotConfig
   const phone = message.from;
   const state = await getOrCreateSession(phone);
   
-  // Mettre à jour la dernière activité
+  // Mettre à jour la dernière activité et créer la fiche prospect si elle n'existe pas
   await updateSession(phone, { lastActivityAt: new Date().toISOString() });
+  
+  // Créer/mettre à jour la fiche prospect dès le premier message
+  const { updateProspectProfile } = await import("./storage/localStore.js");
+  updateProspectProfile(phone, state);
 
   // Step 1: start flow
   if (state.currentQuestionIndex === -1 && state.status === "collecting") {

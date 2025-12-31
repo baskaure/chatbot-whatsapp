@@ -314,9 +314,21 @@ async function loadProspects() {
             throw new Error(`HTTP ${response.status}`);
         }
         const prospects = await response.json();
+        console.log(`[ADMIN] ${prospects.length} prospects chargés`);
         displayProspects(prospects);
+        
+        if (prospects.length === 0) {
+            const tbody = document.getElementById('prospects-tbody');
+            if (tbody) {
+                tbody.innerHTML = '<tr><td colspan="7" style="text-align: center; padding: 20px; color: #999;">Aucun prospect pour le moment</td></tr>';
+            }
+        }
     } catch (error) {
         console.error('Erreur chargement prospects:', error);
+        const tbody = document.getElementById('prospects-tbody');
+        if (tbody) {
+            tbody.innerHTML = '<tr><td colspan="7" style="text-align: center; padding: 20px; color: #dc3545;">Erreur lors du chargement des prospects</td></tr>';
+        }
     }
 }
 
@@ -614,7 +626,7 @@ async function sendPrefillMessage() {
 
 // Réinitialiser une session
 async function resetSession() {
-    const phone = document.getElementById('reset-phone').value;
+    const phone = document.getElementById('reset-phone').value.trim();
     
     if (!phone) {
         showToast('Veuillez entrer un numéro de téléphone', 'error');
@@ -632,18 +644,24 @@ async function resetSession() {
             body: JSON.stringify({ phone })
         });
         
+        if (!response.ok) {
+            const errorData = await response.json().catch(() => ({ error: 'Erreur HTTP ' + response.status }));
+            throw new Error(errorData.error || 'Erreur lors de la réinitialisation');
+        }
+        
         const result = await response.json();
         
         if (result.ok) {
             showToast('Session réinitialisée avec succès !', 'success');
             document.getElementById('reset-phone').value = '';
-            loadData();
+            // Attendre un peu avant de recharger pour que la session soit bien supprimée
+            setTimeout(() => loadData(), 500);
         } else {
-            showToast('Erreur lors de la réinitialisation', 'error');
+            showToast(result.error || 'Erreur lors de la réinitialisation', 'error');
         }
     } catch (error) {
-        showToast('Erreur lors de la réinitialisation', 'error');
-        console.error(error);
+        showToast(error.message || 'Erreur lors de la réinitialisation', 'error');
+        console.error('Erreur reset session:', error);
     }
 }
 
