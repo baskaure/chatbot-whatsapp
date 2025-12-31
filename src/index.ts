@@ -10,7 +10,7 @@ import { handleIncoming } from "./flow.js";
 import { IncomingMessage, BotConfig } from "./types.js";
 import { isDuplicate } from "./dedup.js";
 import { resetSession, allSessions } from "./sessionStore.js";
-import { getAllProspects, getAllConversations, getAllAnswers } from "./storage/localStore.js";
+import { getAllProspects, getAllConversations, getAllAnswers, resetProspectProfile } from "./storage/localStore.js";
 
 dotenv.config();
 
@@ -51,9 +51,15 @@ app.post("/admin/reset", async (req, res) => {
   }
   try {
     const phone = normalizePhone(phoneRaw);
+    
+    // 1. Supprimer la session en mémoire/Redis
     await resetSession(phone);
+    
+    // 2. Supprimer la fiche prospect du fichier
+    resetProspectProfile(phone);
+    
     // eslint-disable-next-line no-console
-    console.log(`[ADMIN] Session réinitialisée pour ${phone}`);
+    console.log(`[ADMIN] Session et fiche prospect réinitialisées pour ${phone}`);
     res.json({ ok: true, message: `Session réinitialisée pour ${phone}` });
   } catch (err) {
     // eslint-disable-next-line no-console

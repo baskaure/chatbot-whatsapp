@@ -90,6 +90,39 @@ export function updateProspectProfile(phone: string, state: ConversationState) {
   console.log(`[STORAGE] Fiche prospect mise à jour pour ${normalizedPhone}`);
 }
 
+// Supprimer/réinitialiser une fiche prospect
+export function resetProspectProfile(phone: string): void {
+  const normalizedPhone = normalizePhoneForStorage(phone);
+  
+  if (!fs.existsSync(PROSPECTS_FILE_PATH)) return;
+  
+  // Lire toutes les fiches existantes
+  const lines = fs.readFileSync(PROSPECTS_FILE_PATH, "utf8").split("\n").filter(Boolean);
+  const prospects: ConversationState[] = [];
+  
+  for (const line of lines) {
+    try {
+      const prospect = JSON.parse(line) as ConversationState;
+      const prospectPhone = normalizePhoneForStorage(prospect.phone || "");
+      // Exclure la fiche du prospect à réinitialiser
+      if (prospectPhone && prospectPhone !== normalizedPhone) {
+        prospects.push(prospect);
+      }
+    } catch (e) {
+      // Ignorer les lignes invalides
+    }
+  }
+  
+  // Réécrire toutes les fiches sauf celle supprimée
+  const content = prospects
+    .map((p) => JSON.stringify(p))
+    .join("\n") + (prospects.length > 0 ? "\n" : "");
+  fs.writeFileSync(PROSPECTS_FILE_PATH, content, "utf8");
+  
+  // eslint-disable-next-line no-console
+  console.log(`[STORAGE] Fiche prospect supprimée pour ${normalizedPhone}`);
+}
+
 // Fonctions de lecture pour l'admin
 export function getAllProspects(): ConversationState[] {
   if (!fs.existsSync(PROSPECTS_FILE_PATH)) return [];

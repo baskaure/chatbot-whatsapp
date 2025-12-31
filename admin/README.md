@@ -64,7 +64,7 @@ Modifiez tous les paramètres du bot en temps réel :
 
 4. **Consulter les statistiques** :
    - L'onglet "Statistiques" se met à jour automatiquement toutes les 30 secondes
-   - Cliquez sur "🔄 Actualiser" pour forcer la mise à jour
+   - Cliquez sur "Actualiser" pour forcer la mise à jour
 
 ## API Endpoints
 

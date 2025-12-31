@@ -75,7 +75,7 @@ function showLoading(show) {
             loadingIndicator = document.createElement('div');
             loadingIndicator.id = 'loading-indicator';
             loadingIndicator.className = 'loading-indicator';
-            loadingIndicator.innerHTML = '🔄 Actualisation...';
+            loadingIndicator.innerHTML = 'Actualisation...';
             header.appendChild(loadingIndicator);
         }
         loadingIndicator.style.display = 'block';

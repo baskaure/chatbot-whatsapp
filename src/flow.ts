@@ -151,9 +151,22 @@ async function handleDisqualified(state: ConversationState, config: BotConfig) {
 export async function handleIncoming(message: IncomingMessage, config: BotConfig) {
   const body = message.body || "";
   const phone = message.from;
-  const state = await getOrCreateSession(phone);
   
-  // Mettre à jour la dernière activité et créer la fiche prospect si elle n'existe pas
+  // Récupérer ou créer une session fraîche
+  let state = await getOrCreateSession(phone);
+  
+  // Si la session a un statut "disqualified" ou "completed", on la réinitialise complètement
+  // pour permettre de recommencer la conversation
+  if (state.status === "disqualified" || state.status === "completed") {
+    // Réinitialiser la session
+    const { resetSession } = await import("./sessionStore.js");
+    await resetSession(phone);
+    
+    // Créer une nouvelle session fraîche
+    state = await getOrCreateSession(phone);
+  }
+  
+  // Mettre à jour la dernière activité
   await updateSession(phone, { lastActivityAt: new Date().toISOString() });
   
   // Créer/mettre à jour la fiche prospect dès le premier message
