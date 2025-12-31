@@ -24,10 +24,12 @@ export function persistConversation(state: ConversationState) {
     savedAt: new Date().toISOString(),
   };
   fs.appendFileSync(FILE_PATH, JSON.stringify(record) + "\n", "utf8");
+  // eslint-disable-next-line no-console
+  console.log(`[STORAGE] Conversation sauvegardée localement pour ${state.phone}`);
 }
 
 // Sauvegarde en temps réel de chaque réponse
-export function persistAnswer(phone: string, answerHistory: AnswerHistory, updatedState: ConversationState) {
+export function persistAnswerLocal(phone: string, answerHistory: AnswerHistory, updatedState: ConversationState) {
   ensureFile(ANSWERS_FILE_PATH);
   const normalizedPhone = normalizePhoneForStorage(phone);
   const record = {
@@ -38,8 +40,8 @@ export function persistAnswer(phone: string, answerHistory: AnswerHistory, updat
   };
   fs.appendFileSync(ANSWERS_FILE_PATH, JSON.stringify(record) + "\n", "utf8");
   
-  // Mettre à jour la fiche prospect
-  updateProspectProfile(phone, updatedState);
+  // eslint-disable-next-line no-console
+  console.log(`[STORAGE] Réponse sauvegardée localement pour ${normalizedPhone}, question: ${answerHistory.questionId}`);
 }
 
 // Normaliser le numéro de téléphone

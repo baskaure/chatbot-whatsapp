@@ -11,6 +11,14 @@ import { IncomingMessage, BotConfig } from "./types.js";
 import { isDuplicate } from "./dedup.js";
 import { resetSession, allSessions } from "./sessionStore.js";
 import { getAllProspects, getAllConversations, getAllAnswers, resetProspectProfile } from "./storage/localStore.js";
+import {
+  getAllProspectsDB,
+  getAllConversationsDB,
+  getAllAnswersDB,
+  resetProspectProfileDB,
+  initDatabase,
+  isDatabaseAvailable,
+} from "./storage/db.js";
 
 dotenv.config();
 
@@ -22,6 +30,19 @@ const port = process.env.PORT || 3000;
 let config = loadConfig();
 const require = createRequire(import.meta.url);
 const twilio = require("twilio");
+
+// Initialiser la base de données au démarrage
+if (isDatabaseAvailable()) {
+  initDatabase().then((success) => {
+    if (success) {
+      // eslint-disable-next-line no-console
+      console.log("[APP] Base de données PostgreSQL initialisée");
+    } else {
+      // eslint-disable-next-line no-console
+      console.log("[APP] Base de données non disponible, utilisation des fichiers locaux");
+    }
+  });
+}
 
 app.use(bodyParser.json());
 app.use(bodyParser.urlencoded({ extended: true }));
@@ -55,8 +76,12 @@ app.post("/admin/reset", async (req, res) => {
     // 1. Supprimer la session en mémoire/Redis
     await resetSession(phone);
     
-    // 2. Supprimer la fiche prospect du fichier
-    resetProspectProfile(phone);
+    // 2. Supprimer la fiche prospect (DB ou fichier)
+    if (isDatabaseAvailable()) {
+      await resetProspectProfileDB(phone);
+    } else {
+      resetProspectProfile(phone);
+    }
     
     // eslint-disable-next-line no-console
     console.log(`[ADMIN] Session et fiche prospect réinitialisées pour ${phone}`);
@@ -133,9 +158,11 @@ app.get("/api/admin/prospects", (_req, res) => {
 });
 
 // API Admin - Récupérer toutes les conversations
-app.get("/api/admin/conversations", (_req, res) => {
+app.get("/api/admin/conversations", async (_req, res) => {
   try {
-    const conversations = getAllConversations();
+    const conversations = isDatabaseAvailable()
+      ? await getAllConversationsDB()
+      : getAllConversations();
     res.json(conversations);
   } catch (err) {
     // eslint-disable-next-line no-console
@@ -145,9 +172,11 @@ app.get("/api/admin/conversations", (_req, res) => {
 });
 
 // API Admin - Récupérer toutes les réponses
-app.get("/api/admin/answers", (_req, res) => {
+app.get("/api/admin/answers", async (_req, res) => {
   try {
-    const answers = getAllAnswers();
+    const answers = isDatabaseAvailable()
+      ? await getAllAnswersDB()
+      : getAllAnswers();
     // eslint-disable-next-line no-console
     console.log(`[API] Récupération de ${answers.length} réponses`);
     res.json(answers);

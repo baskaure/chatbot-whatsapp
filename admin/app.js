@@ -372,7 +372,15 @@ async function loadAnswers() {
             throw new Error(`HTTP ${response.status}`);
         }
         const answers = await response.json();
+        console.log(`[ADMIN] ${answers.length} réponses chargées`);
         displayAnswers(answers);
+        
+        if (answers.length === 0) {
+            const container = document.getElementById('answers-container');
+            if (container) {
+                container.innerHTML = '<div class="empty-state"><p>Aucune réponse pour le moment</p></div>';
+            }
+        }
     } catch (error) {
         console.error('Erreur chargement réponses:', error);
         const container = document.getElementById('answers-container');
@@ -472,11 +480,31 @@ function displayAnswers(answers) {
 // Charger les conversations
 async function loadConversations() {
     try {
-        const response = await fetch(`${API_BASE}/api/admin/conversations`);
+        const response = await fetch(`${API_BASE}/api/admin/conversations`, {
+            cache: 'no-cache',
+            headers: {
+                'Cache-Control': 'no-cache'
+            }
+        });
+        if (!response.ok) {
+            throw new Error(`HTTP ${response.status}`);
+        }
         const conversations = await response.json();
+        console.log(`[ADMIN] ${conversations.length} conversations chargées`);
         displayConversations(conversations);
+        
+        if (conversations.length === 0) {
+            const tbody = document.getElementById('conversations-tbody');
+            if (tbody) {
+                tbody.innerHTML = '<tr><td colspan="6" style="text-align: center; padding: 20px; color: #999;">Aucune conversation pour le moment</td></tr>';
+            }
+        }
     } catch (error) {
         console.error('Erreur chargement conversations:', error);
+        const tbody = document.getElementById('conversations-tbody');
+        if (tbody) {
+            tbody.innerHTML = '<tr><td colspan="6" style="text-align: center; padding: 20px; color: #dc3545;">Erreur lors du chargement des conversations</td></tr>';
+        }
     }
 }
 
