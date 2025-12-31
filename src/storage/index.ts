@@ -1,6 +1,6 @@
 import { ConversationState, AnswerHistory } from "../types.js";
-import { persistConversation as persistLocal, persistAnswer as persistAnswerLocal } from "./localStore.js";
-import { persistToSheet, persistAnswerToSheet, updateProspectProfile } from "./googleSheets.js";
+import { persistConversation as persistLocal, persistAnswer as persistAnswerLocal, updateProspectProfile as updateProspectProfileLocal } from "./localStore.js";
+import { persistToSheet, persistAnswerToSheet, updateProspectProfile as updateProspectProfileSheet } from "./googleSheets.js";
 
 export async function persistConversation(state: ConversationState) {
   // eslint-disable-next-line no-console
@@ -24,7 +24,8 @@ export async function persistAnswer(phone: string, answerHistory: AnswerHistory,
     persistAnswerLocal(phone, answerHistory, updatedState);
   }
   
-  // Mettre à jour la fiche prospect
-  await updateProspectProfile(phone, updatedState);
+  // Mettre à jour la fiche prospect (toujours en local, et dans Sheets si disponible)
+  updateProspectProfileLocal(phone, updatedState);
+  await updateProspectProfileSheet(phone, updatedState);
 }
 

@@ -31,12 +31,38 @@ header {
     top: 0;
     z-index: 100;
     box-shadow: 0 1px 3px rgba(0, 0, 0, 0.08);
+    position: relative;
 }
 
 header h1 {
     font-size: 24px;
     font-weight: 500;
     color: #333;
+}
+
+.loading-indicator {
+    position: absolute;
+    top: 50%;
+    right: 200px;
+    transform: translateY(-50%);
+    background: #667eea;
+    color: white;
+    padding: 6px 12px;
+    border-radius: 4px;
+    font-size: 12px;
+    font-weight: 500;
+    animation: pulse 1.5s ease-in-out infinite;
+    display: none;
+    z-index: 10;
+}
+
+@keyframes pulse {
+    0%, 100% {
+        opacity: 1;
+    }
+    50% {
+        opacity: 0.6;
+    }
 }
 
 .header-actions {

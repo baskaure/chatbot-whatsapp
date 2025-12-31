@@ -12,8 +12,13 @@ document.addEventListener('DOMContentLoaded', () => {
     loadData();
     setupEventListeners();
     
-    // Actualiser toutes les 30 secondes
-    setInterval(loadData, 30000);
+    // Actualiser toutes les 10 secondes
+    setInterval(() => {
+        const activeTab = document.querySelector('.tab-content.active');
+        if (activeTab) {
+            loadData();
+        }
+    }, 10000);
 });
 
 // Gestion des onglets
@@ -32,19 +37,53 @@ function initTabs() {
             // Activer l'onglet sélectionné
             btn.classList.add('active');
             document.getElementById(`${targetTab}-tab`).classList.add('active');
+            
+            // Recharger les données de l'onglet actif
+            loadData();
         });
     });
 }
 
 // Charger toutes les données
 async function loadData() {
-    await Promise.all([
-        loadConfig(),
-        loadStats(),
-        loadProspects(),
-        loadAnswers(),
-        loadConversations()
-    ]);
+    showLoading(true);
+    try {
+        await Promise.all([
+            loadConfig(),
+            loadStats(),
+            loadProspects(),
+            loadAnswers(),
+            loadConversations()
+        ]);
+    } catch (error) {
+        console.error('Erreur lors du chargement des données:', error);
+        showToast('Erreur lors du chargement des données', 'error');
+    } finally {
+        showLoading(false);
+    }
+}
+
+// Afficher/masquer l'indicateur de chargement
+function showLoading(show) {
+    const header = document.querySelector('header');
+    if (!header) return;
+    
+    let loadingIndicator = document.getElementById('loading-indicator');
+    
+    if (show) {
+        if (!loadingIndicator) {
+            loadingIndicator = document.createElement('div');
+            loadingIndicator.id = 'loading-indicator';
+            loadingIndicator.className = 'loading-indicator';
+            loadingIndicator.innerHTML = '🔄 Actualisation...';
+            header.appendChild(loadingIndicator);
+        }
+        loadingIndicator.style.display = 'block';
+    } else {
+        if (loadingIndicator) {
+            loadingIndicator.style.display = 'none';
+        }
+    }
 }
 
 // Charger la configuration
@@ -224,7 +263,15 @@ window.deleteOption = function(questionIndex, optionIndex) {
 // Charger les statistiques
 async function loadStats() {
     try {
-        const response = await fetch(`${API_BASE}/api/admin/stats`);
+        const response = await fetch(`${API_BASE}/api/admin/stats`, {
+            cache: 'no-cache',
+            headers: {
+                'Cache-Control': 'no-cache'
+            }
+        });
+        if (!response.ok) {
+            throw new Error(`HTTP ${response.status}`);
+        }
         const stats = await response.json();
         currentStats = stats;
         displayStats(stats);
@@ -257,7 +304,15 @@ function displayStats(stats) {
 // Charger les prospects
 async function loadProspects() {
     try {
-        const response = await fetch(`${API_BASE}/api/admin/prospects`);
+        const response = await fetch(`${API_BASE}/api/admin/prospects`, {
+            cache: 'no-cache',
+            headers: {
+                'Cache-Control': 'no-cache'
+            }
+        });
+        if (!response.ok) {
+            throw new Error(`HTTP ${response.status}`);
+        }
         const prospects = await response.json();
         displayProspects(prospects);
     } catch (error) {
@@ -295,11 +350,23 @@ function displayProspects(prospects) {
 // Charger les réponses
 async function loadAnswers() {
     try {
-        const response = await fetch(`${API_BASE}/api/admin/answers`);
+        const response = await fetch(`${API_BASE}/api/admin/answers`, {
+            cache: 'no-cache',
+            headers: {
+                'Cache-Control': 'no-cache'
+            }
+        });
+        if (!response.ok) {
+            throw new Error(`HTTP ${response.status}`);
+        }
         const answers = await response.json();
         displayAnswers(answers);
     } catch (error) {
         console.error('Erreur chargement réponses:', error);
+        const container = document.getElementById('answers-container');
+        if (container) {
+            container.innerHTML = '<div class="empty-state"><p>Erreur lors du chargement des réponses</p></div>';
+        }
     }
 }
 
@@ -692,7 +759,10 @@ function formatDate(dateString) {
 // Configuration des event listeners
 function setupEventListeners() {
     document.getElementById('saveConfigBtn')?.addEventListener('click', saveConfig);
-    document.getElementById('refreshBtn')?.addEventListener('click', loadData);
+    document.getElementById('refreshBtn')?.addEventListener('click', () => {
+        loadData();
+        showToast('Données actualisées', 'success');
+    });
     document.getElementById('send-prefill-btn')?.addEventListener('click', sendPrefillMessage);
     document.getElementById('reset-session-btn')?.addEventListener('click', resetSession);
 }

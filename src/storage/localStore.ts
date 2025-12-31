@@ -42,7 +42,7 @@ export function persistAnswer(phone: string, answerHistory: AnswerHistory, updat
 }
 
 // Mise à jour de la fiche prospect en temps réel
-function updateProspectProfile(phone: string, state: ConversationState) {
+export function updateProspectProfile(phone: string, state: ConversationState) {
   ensureFile(PROSPECTS_FILE_PATH);
   
   // Lire toutes les fiches existantes
