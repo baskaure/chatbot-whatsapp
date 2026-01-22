@@ -181,8 +181,27 @@
             </div>
 
             <div class="config-section">
-                <h2>Questions</h2>
-                <p class="help-text">Questions posées au prospect avec leurs options et scores</p>
+                <h2>Flows de Formulaires (avec mots-clés)</h2>
+                <p class="help-text">Configurez les flows pour les utilisateurs venant de formulaires Facebook avec un mot-clé (ex: "expert habitat")</p>
+                <div id="form-flows-container"></div>
+                <button id="add-form-flow-btn" class="btn btn-secondary">+ Ajouter un Flow de Formulaire</button>
+            </div>
+
+            <div class="config-section">
+                <h2>Flows par Secteur (sans formulaire)</h2>
+                <p class="help-text">Configurez les questions selon le secteur d'activité pour les utilisateurs qui démarrent directement</p>
+                <div class="config-section">
+                    <h3>Question d'identification du secteur</h3>
+                    <p class="help-text">Question posée pour identifier le secteur d'activité</p>
+                    <div id="sector-question-container"></div>
+                </div>
+                <div id="sector-flows-container"></div>
+                <button id="add-sector-flow-btn" class="btn btn-secondary">+ Ajouter un Flow par Secteur</button>
+            </div>
+
+            <div class="config-section">
+                <h2>Questions par Défaut (Legacy)</h2>
+                <p class="help-text">Questions posées au prospect avec leurs options et scores (utilisées si aucun flow spécifique ne correspond)</p>
                 <div id="questions-container"></div>
                 <button id="add-question-btn" class="btn btn-secondary">+ Ajouter une Question</button>
             </div>

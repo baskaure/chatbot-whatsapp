@@ -3,6 +3,7 @@ import { getOrCreateSession, updateSession } from "./sessionStore.js";
 import { sendMessage } from "./provider/sendMessage.js";
 import { computeTotalScore, scoreAnswer } from "./scoring.js";
 import { persistConversation, persistAnswer } from "./storage/index.js";
+import { detectFormFlow, getQuestionsForFlow, shouldSkipQuestion, getSectorFlow } from "./flowDetector.js";
 
 const reminderTimers = new Map<string, NodeJS.Timeout>();
 
@@ -77,22 +78,76 @@ function makeDecision(state: ConversationState, config: BotConfig): { decision: 
 }
 
 async function askNextQuestion(state: ConversationState, config: BotConfig) {
-  const idx = state.currentQuestionIndex + 1;
-  const next = config.questions[idx];
-  if (!next) return;
+  // Récupérer les questions selon le flow actif
+  const { questions, skipQuestions } = getQuestionsForFlow(
+    state.formFlowId,
+    state.sector,
+    config
+  );
+
+  if (questions.length === 0) {
+    // Aucune question disponible
+    return;
+  }
+
+  // Trouver la prochaine question non ignorée
+  let nextIndex = state.currentQuestionIndex + 1;
+  let next = questions[nextIndex];
+  
+  // Ignorer les questions déjà posées dans le formulaire
+  while (next && shouldSkipQuestion(next.id, skipQuestions)) {
+    nextIndex++;
+    next = questions[nextIndex];
+  }
+
+  if (!next) {
+    // Plus de questions, terminer le flow
+    await finishQuestions(state, config);
+    return;
+  }
+
   const message = `${next.label}\n${renderOptions(next.options)}`;
   await sendMessage({ to: state.phone, body: message });
   
   // Mettre à jour le nombre total de questions
-  const totalQuestions = Math.max(state.metadata.totalQuestions, config.questions.length);
+  const totalQuestions = Math.max(state.metadata.totalQuestions, questions.length);
   await updateSession(state.phone, { 
-    currentQuestionIndex: idx,
+    currentQuestionIndex: nextIndex,
     metadata: {
       ...state.metadata,
       totalQuestions,
     },
   });
   scheduleReminder(state.phone, next.label, next.options, config);
+}
+
+async function finishQuestions(state: ConversationState, config: BotConfig) {
+  // Calculer le score final
+  const totalScore = computeTotalScore(state, config);
+  await updateSession(state.phone, { score: totalScore });
+  
+  const { decision, reason } = makeDecision(state, config);
+  await updateSession(state.phone, { 
+    decision,
+    decisionReason: reason,
+    status: decision === "rdv" ? "awaiting_preference" : decision === "sortie" ? "disqualified" : "qualified",
+  });
+
+  const updated = await getOrCreateSession(state.phone);
+  
+  if (decision === "rdv") {
+    await handleQualified(updated, config);
+  } else if (decision === "sortie") {
+    await handleDisqualified(updated, config);
+  } else {
+    // Humain ou Nurturing
+    const message = decision === "humain" 
+      ? config.messages.humain_message 
+      : config.messages.nurturing_message;
+    await sendMessage({ to: state.phone, body: message });
+    await updateSession(state.phone, { status: "completed" });
+    persistConversation(updated);
+  }
 }
 
 function isValidAnswer(answer: string, options: string[]): string | null {
@@ -220,23 +275,60 @@ export async function handleIncoming(message: IncomingMessage, config: BotConfig
     return;
   }
 
-  // Step 1: start flow
-  // IMPORTANT: Ne pas démarrer si le statut est "disqualified" ou "awaiting_preference"
-  // car le prospect est en train de gérer la ressource ou le calendly
+  // Step 1: Détection du flow et démarrage
   if (state.currentQuestionIndex === -1 && state.status === "collecting") {
     const normalized = normalize(body);
+    
+    // CAS 1: Détecter un mot-clé de formulaire (ex: "expert habitat")
+    const detectedFlow = detectFormFlow(body, config);
+    if (detectedFlow) {
+      // Utilisateur vient d'un formulaire avec mot-clé
+      await updateSession(phone, {
+        formFlowId: detectedFlow.id,
+        detectedKeyword: detectedFlow.keyword,
+      });
+      
+      const { questions } = getQuestionsForFlow(detectedFlow.id, undefined, config);
+      await updateSession(phone, {
+        metadata: {
+          ...state.metadata,
+          totalQuestions: questions.length,
+        },
+      });
+      
+      await sendMessage({ to: phone, body: "Parfait ! Je vais te poser quelques questions complémentaires." });
+      const refreshed = await getOrCreateSession(phone);
+      await askNextQuestion(refreshed, config);
+      return;
+    }
+    
+    // CAS 2: Pas de mot-clé, vérifier si on doit demander le secteur
+    if (config.sector_flows && config.sector_flows.length > 0 && !state.sector) {
+      // Demander le secteur d'activité
+      if (config.default_sector_question) {
+        const sectorQ = config.default_sector_question;
+        const message = `${sectorQ.label}\n${renderOptions(sectorQ.options)}`;
+        await sendMessage({ to: phone, body: message });
+        await updateSession(phone, { currentQuestionIndex: -2 }); // -2 = en attente de secteur
+        return;
+      }
+    }
+    
+    // CAS 3: Démarrage classique avec mots-clés de démarrage
     const shouldStart = config.start_keywords.some((kw) => normalized.includes(kw));
     if (!shouldStart) {
       await sendMessage({ to: phone, body: config.welcome });
       return;
     }
+    
     await sendMessage({ to: phone, body: "Super, on commence." });
     
-    // Initialiser les métadonnées
+    // Utiliser les questions par défaut ou du secteur si défini
+    const { questions } = getQuestionsForFlow(undefined, state.sector, config);
     await updateSession(phone, {
       metadata: {
         ...state.metadata,
-        totalQuestions: config.questions.length,
+        totalQuestions: questions.length,
       },
     });
     
@@ -244,9 +336,59 @@ export async function handleIncoming(message: IncomingMessage, config: BotConfig
     await askNextQuestion(refreshed, config);
     return;
   }
+  
+  // Step 1.5: Traitement de la réponse secteur (si en attente)
+  if (state.currentQuestionIndex === -2 && config.default_sector_question) {
+    const sectorQ = config.default_sector_question;
+    const validAnswer = isValidAnswer(body, sectorQ.options);
+    
+    if (!validAnswer) {
+      await sendMessage({
+        to: phone,
+        body: `Je n'ai pas compris. Merci de choisir parmi :\n${renderOptions(sectorQ.options)}`,
+      });
+      return;
+    }
+    
+    // Trouver le flow correspondant au secteur
+    const sectorFlow = getSectorFlow(validAnswer, config);
+    if (sectorFlow) {
+      await updateSession(phone, {
+        sector: validAnswer,
+        currentQuestionIndex: -1, // Réinitialiser pour commencer les questions du secteur
+        answers: { ...state.answers, sector: validAnswer },
+      });
+      
+      const { questions } = getQuestionsForFlow(undefined, validAnswer, config);
+      await updateSession(phone, {
+        metadata: {
+          ...state.metadata,
+          totalQuestions: questions.length,
+        },
+      });
+      
+      await sendMessage({ to: phone, body: "Parfait ! Je vais te poser quelques questions." });
+      const refreshed = await getOrCreateSession(phone);
+      await askNextQuestion(refreshed, config);
+      return;
+    } else {
+      // Secteur non trouvé, utiliser les questions par défaut
+      await updateSession(phone, {
+        sector: validAnswer,
+        currentQuestionIndex: -1,
+        answers: { ...state.answers, sector: validAnswer },
+      });
+      const refreshed = await getOrCreateSession(phone);
+      await askNextQuestion(refreshed, config);
+      return;
+    }
+  }
 
   // Validate current question answer
-  const currentQ = config.questions[state.currentQuestionIndex];
+  // Récupérer les questions selon le flow actif
+  const { questions } = getQuestionsForFlow(state.formFlowId, state.sector, config);
+  const currentQ = questions[state.currentQuestionIndex];
+  
   if (!currentQ) {
     await sendMessage({ to: phone, body: "On reprend : " });
     await askNextQuestion(state, config);
@@ -265,7 +407,7 @@ export async function handleIncoming(message: IncomingMessage, config: BotConfig
   clearReminder(phone);
   
   // Calculer le score de cette réponse
-  const answerScore = scoreAnswer(currentQ.id, validAnswer, config);
+  const answerScore = scoreAnswer(currentQ.id, validAnswer, config, state);
   const answers = { ...state.answers, [currentQ.id]: validAnswer };
   const score = computeTotalScore({ ...state, answers }, config);
   
@@ -286,6 +428,14 @@ export async function handleIncoming(message: IncomingMessage, config: BotConfig
     config
   );
   
+  // Récupérer les questions actives (sans celles à ignorer)
+  const { questions: activeQuestions, skipQuestions } = getQuestionsForFlow(
+    state.formFlowId,
+    state.sector,
+    config
+  );
+  const filteredQuestions = activeQuestions.filter(q => !shouldSkipQuestion(q.id, skipQuestions));
+  
   // Mettre à jour la session avec toutes les nouvelles données
   await updateSession(phone, { 
     answers,
@@ -294,7 +444,7 @@ export async function handleIncoming(message: IncomingMessage, config: BotConfig
     lastActivityAt: new Date().toISOString(),
     metadata: {
       ...state.metadata,
-      totalQuestions: config.questions.length,
+      totalQuestions: filteredQuestions.length,
       answeredQuestions,
       engagementLevel,
     },
@@ -305,8 +455,9 @@ export async function handleIncoming(message: IncomingMessage, config: BotConfig
   // Sauvegarder la réponse en temps réel
   await persistAnswer(phone, answerHistory, updatedState);
 
-  const nextIndex = state.currentQuestionIndex + 1;
-  if (nextIndex >= config.questions.length) {
+  // Vérifier si c'est la dernière question (en comptant seulement les questions non ignorées)
+  const currentActiveIndex = filteredQuestions.findIndex(q => q.id === currentQ.id);
+  if (currentActiveIndex >= filteredQuestions.length - 1) {
     // Dernière question répondue - prendre une décision automatique
     const decisionInfo = makeDecision(updatedState, config);
     await handleDecision(updatedState, config, decisionInfo.decision);
@@ -314,7 +465,5 @@ export async function handleIncoming(message: IncomingMessage, config: BotConfig
   }
 
   // Poser la question suivante
-  await updateSession(phone, { currentQuestionIndex: state.currentQuestionIndex + 1 });
-  const refreshed = await getOrCreateSession(phone);
-  await askNextQuestion(refreshed, config);
+  await askNextQuestion(updatedState, config);
 }

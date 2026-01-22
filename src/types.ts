@@ -27,10 +27,24 @@ export interface DecisionRules {
   };
 }
 
+export interface FormFlow {
+  id: string;
+  keyword: string; // Mot-clé qui déclenche ce flow (ex: "expert habitat")
+  name: string; // Nom du formulaire (ex: "Expert Habitat")
+  prefill_message: string; // Message pré-rempli avec le mot-clé
+  questions: QuestionConfig[]; // Questions spécifiques à ce formulaire
+  skip_questions?: string[]; // IDs de questions déjà posées dans le formulaire Facebook
+}
+
+export interface SectorFlow {
+  sector: string; // Secteur d'activité (ex: "Coach", "Infopreneur")
+  questions: QuestionConfig[]; // Questions pour ce secteur
+}
+
 export interface BotConfig {
   welcome: string;
   start_keywords: string[];
-  questions: QuestionConfig[];
+  questions: QuestionConfig[]; // Questions par défaut (legacy, pour compatibilité)
   qualified_threshold: number;
   decision_rules: DecisionRules;
   messages: {
@@ -51,6 +65,10 @@ export interface BotConfig {
     enabled: boolean;
     body: string;
   };
+  // Nouveau système de flows
+  form_flows?: FormFlow[]; // Flows avec mots-clés (venant de formulaires)
+  sector_flows?: SectorFlow[]; // Flows par secteur (sans formulaire)
+  default_sector_question?: QuestionConfig; // Question pour identifier le secteur
 }
 
 export type DecisionType = "rdv" | "humain" | "nurturing" | "sortie";
@@ -86,6 +104,9 @@ export interface ProspectProfile {
 
 export interface ConversationState extends ProspectProfile {
   currentQuestionIndex: number;
+  formFlowId?: string; // ID du flow de formulaire actif
+  sector?: string; // Secteur identifié (pour flows par secteur)
+  detectedKeyword?: string; // Mot-clé détecté dans le premier message
 }
 
 export interface IncomingMessage {

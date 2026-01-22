@@ -132,6 +132,17 @@ function populateConfigForm(config) {
     
     // Questions
     populateQuestions(config.questions || []);
+    
+    // Form Flows
+    populateFormFlows(config.form_flows || []);
+    
+    // Sector Flows
+    populateSectorFlows(config.sector_flows || []);
+    
+    // Sector Question
+    if (config.default_sector_question) {
+        populateSectorQuestion(config.default_sector_question);
+    }
 }
 
 // Remplir les questions
@@ -595,29 +606,263 @@ function buildConfigFromForm() {
     
     // Questions
     config.questions = [];
-    document.querySelectorAll('.question-item').forEach(item => {
-        const question = {
-            id: item.querySelector('.question-id')?.value?.trim() || '',
-            label: item.querySelector('.question-label')?.value?.trim() || '',
-            options: [],
-            scores: {}
-        };
-        
-        item.querySelectorAll('.option-row').forEach(optRow => {
-            const optText = optRow.querySelector('.option-text')?.value?.trim();
-            const optScore = parseInt(optRow.querySelector('.option-score')?.value) || 0;
-            if (optText) {
-                question.options.push(optText);
-                question.scores[optText] = optScore;
-            }
-        });
-        
-        if (question.id && question.label && question.options.length > 0) {
-            config.questions.push(question);
+    document.querySelectorAll('#questions-container .question-item').forEach(item => {
+        const question = extractQuestionFromElement(item);
+        if (question) config.questions.push(question);
+    });
+    
+    // Form Flows
+    config.form_flows = [];
+    document.querySelectorAll('.form-flow-item').forEach(item => {
+        const flow = extractFormFlowFromElement(item);
+        if (flow) config.form_flows.push(flow);
+    });
+    
+    // Sector Flows
+    config.sector_flows = [];
+    document.querySelectorAll('.sector-flow-item').forEach(item => {
+        const flow = extractSectorFlowFromElement(item);
+        if (flow) config.sector_flows.push(flow);
+    });
+    
+    // Sector Question
+    const sectorQuestionEl = document.querySelector('#sector-question-container .question-item');
+    if (sectorQuestionEl) {
+        const sectorQ = extractQuestionFromElement(sectorQuestionEl);
+        if (sectorQ) config.default_sector_question = sectorQ;
+    }
+    
+    return config;
+}
+
+// Extraire une question d'un élément DOM
+function extractQuestionFromElement(item) {
+    const question = {
+        id: item.querySelector('.question-id')?.value?.trim() || '',
+        label: item.querySelector('.question-label')?.value?.trim() || '',
+        options: [],
+        scores: {}
+    };
+    
+    item.querySelectorAll('.option-row').forEach(optRow => {
+        const optText = optRow.querySelector('.option-text')?.value?.trim();
+        const optScore = parseInt(optRow.querySelector('.option-score')?.value) || 0;
+        if (optText) {
+            question.options.push(optText);
+            question.scores[optText] = optScore;
         }
     });
     
-    return config;
+    if (question.id && question.label && question.options.length > 0) {
+        return question;
+    }
+    return null;
+}
+
+// Extraire un form flow d'un élément DOM
+function extractFormFlowFromElement(item) {
+    const flow = {
+        id: item.dataset.flowId || `form_${Date.now()}`,
+        keyword: item.querySelector('.flow-keyword')?.value?.trim() || '',
+        name: item.querySelector('.flow-name')?.value?.trim() || '',
+        prefill_message: item.querySelector('.flow-prefill')?.value?.trim() || '',
+        questions: [],
+        skip_questions: []
+    };
+    
+    // Extraire les questions
+    item.querySelectorAll('.flow-questions .question-item').forEach(qItem => {
+        const q = extractQuestionFromElement(qItem);
+        if (q) flow.questions.push(q);
+    });
+    
+    // Extraire les questions à ignorer
+    item.querySelectorAll('.skip-question-checkbox:checked').forEach(cb => {
+        flow.skip_questions.push(cb.value);
+    });
+    
+    if (flow.keyword && flow.name && flow.questions.length > 0) {
+        return flow;
+    }
+    return null;
+}
+
+// Extraire un sector flow d'un élément DOM
+function extractSectorFlowFromElement(item) {
+    const flow = {
+        sector: item.querySelector('.sector-name')?.value?.trim() || '',
+        questions: []
+    };
+    
+    item.querySelectorAll('.sector-questions .question-item').forEach(qItem => {
+        const q = extractQuestionFromElement(qItem);
+        if (q) flow.questions.push(q);
+    });
+    
+    if (flow.sector && flow.questions.length > 0) {
+        return flow;
+    }
+    return null;
+}
+
+// Remplir les form flows
+function populateFormFlows(flows) {
+    const container = document.getElementById('form-flows-container');
+    if (!container) return;
+    container.innerHTML = '';
+    
+    flows.forEach((flow, index) => {
+        container.appendChild(createFormFlowElement(flow, index));
+    });
+}
+
+// Remplir les sector flows
+function populateSectorFlows(flows) {
+    const container = document.getElementById('sector-flows-container');
+    if (!container) return;
+    container.innerHTML = '';
+    
+    flows.forEach((flow, index) => {
+        container.appendChild(createSectorFlowElement(flow, index));
+    });
+}
+
+// Remplir la question secteur
+function populateSectorQuestion(question) {
+    const container = document.getElementById('sector-question-container');
+    if (!container) return;
+    container.innerHTML = '';
+    container.appendChild(createQuestionElement(question, 0));
+}
+
+// Créer un élément form flow
+function createFormFlowElement(flow, index) {
+    const div = document.createElement('div');
+    div.className = 'form-flow-item';
+    div.dataset.flowId = flow.id || `form_${index}`;
+    
+    div.innerHTML = `
+        <div class="form-flow-header">
+            <h3>Flow: ${flow.name || 'Nouveau Flow'}</h3>
+            <button class="btn delete-form-flow" onclick="deleteFormFlow(${index})">Supprimer</button>
+        </div>
+        <div class="form-flow-fields">
+            <div class="form-field-group">
+                <label class="field-label">Nom du formulaire</label>
+                <input type="text" class="flow-name config-input" value="${flow.name || ''}" placeholder="Expert Habitat">
+            </div>
+            <div class="form-field-group">
+                <label class="field-label">Mot-clé</label>
+                <p class="field-help">Mot-clé présent dans le message pré-rempli (ex: "expert habitat")</p>
+                <input type="text" class="flow-keyword config-input" value="${flow.keyword || ''}" placeholder="expert habitat">
+            </div>
+            <div class="form-field-group">
+                <label class="field-label">Message pré-rempli</label>
+                <p class="field-help">Message avec le mot-clé qui sera envoyé via le lien WhatsApp</p>
+                <textarea class="flow-prefill config-input" rows="2" placeholder="Salut, je suis intéressé par expert habitat">${flow.prefill_message || ''}</textarea>
+            </div>
+            <div class="form-field-group">
+                <label class="field-label">Questions à ignorer</label>
+                <p class="field-help">Sélectionnez les questions déjà posées dans le formulaire Facebook (elles ne seront pas reposées)</p>
+                <div class="skip-questions-list" data-flow-index="${index}">
+                    ${generateSkipQuestionsCheckboxes(flow.skip_questions || [])}
+                </div>
+            </div>
+        </div>
+        <div class="form-flow-questions">
+            <h4>Questions de ce flow</h4>
+            <div class="flow-questions" data-flow-index="${index}">
+                ${flow.questions.map((q, qIdx) => createQuestionElementHTML(q, qIdx, `flow_${index}`)).join('')}
+            </div>
+            <button class="btn btn-secondary" onclick="addQuestionToFlow(${index})">+ Ajouter une question</button>
+        </div>
+    `;
+    
+    return div;
+}
+
+// Créer un élément sector flow
+function createSectorFlowElement(flow, index) {
+    const div = document.createElement('div');
+    div.className = 'sector-flow-item';
+    div.dataset.index = index;
+    
+    div.innerHTML = `
+        <div class="sector-flow-header">
+            <h3>Secteur: ${flow.sector || 'Nouveau Secteur'}</h3>
+            <button class="btn delete-sector-flow" onclick="deleteSectorFlow(${index})">Supprimer</button>
+        </div>
+        <div class="sector-flow-fields">
+            <div class="form-field-group">
+                <label class="field-label">Nom du secteur</label>
+                <input type="text" class="sector-name config-input" value="${flow.sector || ''}" placeholder="Coach">
+            </div>
+        </div>
+        <div class="sector-flow-questions">
+            <h4>Questions pour ce secteur</h4>
+            <div class="sector-questions" data-sector-index="${index}">
+                ${flow.questions.map((q, qIdx) => createQuestionElementHTML(q, qIdx, `sector_${index}`)).join('')}
+            </div>
+            <button class="btn btn-secondary" onclick="addQuestionToSector(${index})">+ Ajouter une question</button>
+        </div>
+    `;
+    
+    return div;
+}
+
+// Générer les checkboxes pour les questions à ignorer
+function generateSkipQuestionsCheckboxes(skipQuestions) {
+    if (!currentConfig || !currentConfig.questions) return '<p class="help-text">Aucune question disponible</p>';
+    
+    return currentConfig.questions.map(q => `
+        <label class="checkbox-label">
+            <input type="checkbox" class="skip-question-checkbox" value="${q.id}" ${skipQuestions.includes(q.id) ? 'checked' : ''}>
+            ${q.label || q.id}
+        </label>
+    `).join('');
+}
+
+// Créer le HTML d'une question (pour insertion dans les flows)
+function createQuestionElementHTML(question, index, prefix) {
+    const optionsArray = Array.isArray(question.options) ? question.options : Object.keys(question.options || {});
+    const scores = question.scores || {};
+    
+    return `
+        <div class="question-item" data-index="${index}">
+            <div class="question-header">
+                <h4>Question ${index + 1}</h4>
+                <button class="btn delete-question" onclick="deleteQuestionFromFlow('${prefix}', ${index})">×</button>
+            </div>
+            <div class="question-fields">
+                <div class="question-field-group">
+                    <label class="field-label">ID</label>
+                    <input type="text" class="question-id config-input" value="${question.id || ''}" placeholder="question_id">
+                </div>
+                <div class="question-field-group">
+                    <label class="field-label">Texte</label>
+                    <input type="text" class="question-label config-input" value="${question.label || ''}" placeholder="Question ?">
+                </div>
+            </div>
+            <div class="options-section">
+                <div class="options-list">
+                    ${optionsArray.map((opt, optIdx) => `
+                        <div class="option-row">
+                            <div class="option-input-group">
+                                <label class="option-label">Réponse ${optIdx + 1}</label>
+                                <input type="text" class="option-text config-input" value="${opt}" placeholder="Option">
+                            </div>
+                            <div class="score-input-group">
+                                <label class="option-label">Score</label>
+                                <input type="number" class="option-score config-input" value="${scores[opt] || 0}" min="0">
+                            </div>
+                            <button class="btn-remove-option" onclick="deleteOptionFromFlow('${prefix}', ${index}, ${optIdx})">×</button>
+                        </div>
+                    `).join('')}
+                </div>
+                <button class="btn btn-secondary" onclick="addOptionToFlow('${prefix}', ${index})">+ Ajouter une réponse</button>
+            </div>
+        </div>
+    `;
 }
 
 // Envoyer un message pré-rempli
@@ -811,5 +1056,148 @@ function setupEventListeners() {
     });
     document.getElementById('send-prefill-btn')?.addEventListener('click', sendPrefillMessage);
     document.getElementById('reset-session-btn')?.addEventListener('click', resetSession);
+    document.getElementById('add-form-flow-btn')?.addEventListener('click', addFormFlow);
+    document.getElementById('add-sector-flow-btn')?.addEventListener('click', addSectorFlow);
 }
 
+// Ajouter un form flow
+function addFormFlow() {
+    if (!currentConfig) {
+        showToast('Veuillez d\'abord charger la configuration', 'error');
+        return;
+    }
+    if (!currentConfig.form_flows) currentConfig.form_flows = [];
+    const newFlow = {
+        id: `form_${Date.now()}`,
+        keyword: '',
+        name: '',
+        prefill_message: '',
+        questions: [],
+        skip_questions: []
+    };
+    currentConfig.form_flows.push(newFlow);
+    populateFormFlows(currentConfig.form_flows);
+}
+
+// Supprimer un form flow
+window.deleteFormFlow = function(index) {
+    if (!currentConfig || !currentConfig.form_flows) return;
+    if (confirm('Êtes-vous sûr de vouloir supprimer ce flow de formulaire ?')) {
+        currentConfig.form_flows.splice(index, 1);
+        populateFormFlows(currentConfig.form_flows);
+    }
+};
+
+// Ajouter un secteur flow
+function addSectorFlow() {
+    if (!currentConfig) {
+        showToast('Veuillez d\'abord charger la configuration', 'error');
+        return;
+    }
+    if (!currentConfig.sector_flows) currentConfig.sector_flows = [];
+    const newFlow = {
+        sector: '',
+        questions: []
+    };
+    currentConfig.sector_flows.push(newFlow);
+    populateSectorFlows(currentConfig.sector_flows);
+}
+
+// Supprimer un secteur flow
+window.deleteSectorFlow = function(index) {
+    if (!currentConfig || !currentConfig.sector_flows) return;
+    if (confirm('Êtes-vous sûr de vouloir supprimer ce flow par secteur ?')) {
+        currentConfig.sector_flows.splice(index, 1);
+        populateSectorFlows(currentConfig.sector_flows);
+    }
+};
+
+// Ajouter une question à un flow
+window.addQuestionToFlow = function(flowIndex) {
+    if (!currentConfig || !currentConfig.form_flows) return;
+    const flow = currentConfig.form_flows[flowIndex];
+    if (!flow.questions) flow.questions = [];
+    flow.questions.push({
+        id: '',
+        label: '',
+        options: [],
+        scores: {}
+    });
+    populateFormFlows(currentConfig.form_flows);
+};
+
+// Ajouter une question à un secteur
+window.addQuestionToSector = function(sectorIndex) {
+    if (!currentConfig || !currentConfig.sector_flows) return;
+    const flow = currentConfig.sector_flows[sectorIndex];
+    if (!flow.questions) flow.questions = [];
+    flow.questions.push({
+        id: '',
+        label: '',
+        options: [],
+        scores: {}
+    });
+    populateSectorFlows(currentConfig.sector_flows);
+};
+
+// Supprimer une question d'un flow
+window.deleteQuestionFromFlow = function(prefix, questionIndex) {
+    const [type, index] = prefix.split('_');
+    if (type === 'flow' && currentConfig?.form_flows) {
+        const flow = currentConfig.form_flows[parseInt(index)];
+        if (flow && flow.questions) {
+            flow.questions.splice(questionIndex, 1);
+            populateFormFlows(currentConfig.form_flows);
+        }
+    } else if (type === 'sector' && currentConfig?.sector_flows) {
+        const flow = currentConfig.sector_flows[parseInt(index)];
+        if (flow && flow.questions) {
+            flow.questions.splice(questionIndex, 1);
+            populateSectorFlows(currentConfig.sector_flows);
+        }
+    }
+};
+
+// Ajouter une option à une question dans un flow
+window.addOptionToFlow = function(prefix, questionIndex) {
+    const [type, index] = prefix.split('_');
+    let questions;
+    if (type === 'flow' && currentConfig?.form_flows) {
+        questions = currentConfig.form_flows[parseInt(index)]?.questions;
+    } else if (type === 'sector' && currentConfig?.sector_flows) {
+        questions = currentConfig.sector_flows[parseInt(index)]?.questions;
+    }
+    if (questions && questions[questionIndex]) {
+        if (!questions[questionIndex].options) questions[questionIndex].options = [];
+        if (!questions[questionIndex].scores) questions[questionIndex].scores = {};
+        questions[questionIndex].options.push('');
+        if (type === 'flow') {
+            populateFormFlows(currentConfig.form_flows);
+        } else {
+            populateSectorFlows(currentConfig.sector_flows);
+        }
+    }
+};
+
+// Supprimer une option d'une question dans un flow
+window.deleteOptionFromFlow = function(prefix, questionIndex, optionIndex) {
+    const [type, index] = prefix.split('_');
+    let questions;
+    if (type === 'flow' && currentConfig?.form_flows) {
+        questions = currentConfig.form_flows[parseInt(index)]?.questions;
+    } else if (type === 'sector' && currentConfig?.sector_flows) {
+        questions = currentConfig.sector_flows[parseInt(index)]?.questions;
+    }
+    if (questions && questions[questionIndex]) {
+        const optText = questions[questionIndex].options[optionIndex];
+        questions[questionIndex].options.splice(optionIndex, 1);
+        if (optText && questions[questionIndex].scores) {
+            delete questions[questionIndex].scores[optText];
+        }
+        if (type === 'flow') {
+            populateFormFlows(currentConfig.form_flows);
+        } else {
+            populateSectorFlows(currentConfig.sector_flows);
+        }
+    }
+};
