@@ -1,0 +1,128 @@
+{
+  "welcome": "Salut, ici l'assistant de Kingdom Ads. Je vais te poser quelques questions rapides pour voir comment on peut t'aider. Tu es prêt ?",
+  "start_keywords": [
+    "ok",
+    "oui",
+    "ready",
+    "go",
+    "coach",
+    "camperx",
+    "bonjour",
+    "hello",
+    "pub"
+  ],
+  "questions": [
+    {
+      "id": "sector",
+      "label": "Secteur d'activité",
+      "options": [
+        "0",
+        "1",
+        "2",
+        "3",
+        "4"
+      ],
+      "scores": {
+        "0": 0,
+        "1": 0,
+        "2": 0,
+        "3": 0,
+        "4": 0
+      }
+    },
+    {
+      "id": "revenue",
+      "label": "Chiffre d'affaires mensuel actuel",
+      "options": [
+        "0",
+        "1",
+        "2",
+        "3"
+      ],
+      "scores": {
+        "0": 0,
+        "1": 0,
+        "2": 0,
+        "3": 0
+      }
+    },
+    {
+      "id": "ads",
+      "label": "Utilisation actuelle de la publicité",
+      "options": [
+        "0",
+        "1",
+        "2"
+      ],
+      "scores": {
+        "0": 0,
+        "1": 0,
+        "2": 0
+      }
+    },
+    {
+      "id": "goal",
+      "label": "Objectif principal sur 90 jours",
+      "options": [
+        "0",
+        "1",
+        "2",
+        "3"
+      ],
+      "scores": {
+        "0": 0,
+        "1": 0,
+        "2": 0,
+        "3": 0
+      }
+    },
+    {
+      "id": "budget",
+      "label": "Budget publicitaire & d'accompagnement disponible",
+      "options": [
+        "0",
+        "1",
+        "2"
+      ],
+      "scores": {
+        "0": 0,
+        "1": 0,
+        "2": 0
+      }
+    }
+  ],
+  "qualified_threshold": 7,
+  "decision_rules": {
+    "rdv": {
+      "minScore": 9
+    },
+    "humain": {
+      "minScore": 7
+    },
+    "nurturing": {
+      "minScore": 4,
+      "maxScore": 6
+    },
+    "sortie": {
+      "maxScore": 3
+    }
+  },
+  "messages": {
+    "qualified_intro": "Parfait, tu as le profil idéal pour un audit complet de ton système marketing. Je te propose un appel stratégique de 30 min. Tu préfères matin ou après-midi ?",
+    "calendly_link": "https://calendly.com/votre-lien?name={name}&email={phone}",
+    "disqualified": "Merci pour tes réponses. Pour le moment, on ne peut pas t'accompagner efficacement. Mais je peux t'envoyer une ressource pour t'aider à structurer tes premières bases. Tu veux que je te l'envoie ?",
+    "resource_link": "https://votre-pdf-ou-video",
+    "rdv_message": "Parfait, tu as le profil idéal pour un audit complet de ton système marketing. Je te propose un appel stratégique de 30 min. Tu préfères matin ou après-midi ?",
+    "humain_message": "Merci pour tes réponses ! Un de nos conseillers va te contacter prochainement pour discuter de ton projet.",
+    "nurturing_message": "Merci pour tes réponses. On va te tenir informé avec du contenu adapté pour t'aider à développer ton activité.",
+    "sortie_message": "Merci pour tes réponses. Pour le moment, on ne peut pas t'accompagner efficacement. Mais je peux t'envoyer une ressource pour t'aider à structurer tes premières bases."
+  },
+  "timeouts": {
+    "question_seconds": 600,
+    "max_retries": 2
+  },
+  "prefill_message": {
+    "enabled": true,
+    "body": "Salut ! 👋 Je suis l'assistant de Kingdom Ads. J'aimerais te poser quelques questions rapides pour voir comment on peut t'aider à développer ton activité. Tu es prêt ?"
+  }
+}

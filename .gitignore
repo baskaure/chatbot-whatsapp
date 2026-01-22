@@ -5,3 +5,11 @@ data/
 *.log
 .DS_Store
 
+# Configuration avec données sensibles
+config/config.json
+
+# Fichiers d'exemple de données (ne pas versionner)
+data/*.csv
+data/*.jsonl
+data/*.json
+!data/.gitkeep

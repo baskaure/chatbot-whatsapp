@@ -50,6 +50,9 @@ app.use(bodyParser.urlencoded({ extended: true }));
 // Servir les fichiers statiques du panel admin
 app.use("/admin", express.static(path.join(__dirname, "../admin")));
 
+// Servir les fichiers statiques du dossier public (logo, etc.)
+app.use("/public", express.static(path.join(__dirname, "../public")));
+
 // Route pour servir index.html du panel admin
 app.get("/admin", (_req, res) => {
   res.sendFile(path.join(__dirname, "../admin/index.html"));
