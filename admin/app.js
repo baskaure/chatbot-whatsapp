@@ -549,7 +549,10 @@ async function saveConfig() {
         
         if (result.ok) {
             showToast('Configuration sauvegardée avec succès !', 'success');
+            // Mettre à jour currentConfig avec la config sauvegardée
             currentConfig = config;
+            // Recharger depuis le serveur pour s'assurer qu'on a la version à jour
+            await loadConfig();
         } else {
             showToast('Erreur lors de la sauvegarde', 'error');
         }
@@ -605,16 +608,24 @@ function buildConfigFromForm() {
     
     // Form Flows
     config.form_flows = [];
-    document.querySelectorAll('.form-flow-item').forEach(item => {
+    document.querySelectorAll('.form-flow-item').forEach((item, index) => {
         const flow = extractFormFlowFromElement(item);
-        if (flow) config.form_flows.push(flow);
+        if (flow) {
+            config.form_flows.push(flow);
+        } else {
+            console.warn(`Form flow ${index} non sauvegardé (incomplet ou vide)`);
+        }
     });
     
     // Sector Flows
     config.sector_flows = [];
-    document.querySelectorAll('.sector-flow-item').forEach(item => {
+    document.querySelectorAll('.sector-flow-item').forEach((item, index) => {
         const flow = extractSectorFlowFromElement(item);
-        if (flow) config.sector_flows.push(flow);
+        if (flow) {
+            config.sector_flows.push(flow);
+        } else {
+            console.warn(`Sector flow ${index} non sauvegardé (incomplet ou vide)`);
+        }
     });
     
     // Sector Question
@@ -629,6 +640,8 @@ function buildConfigFromForm() {
 
 // Extraire une question d'un élément DOM
 function extractQuestionFromElement(item) {
+    if (!item) return null;
+    
     const question = {
         id: item.querySelector('.question-id')?.value?.trim() || '',
         label: item.querySelector('.question-label')?.value?.trim() || '',
@@ -645,7 +658,9 @@ function extractQuestionFromElement(item) {
         }
     });
     
-    if (question.id && question.label && question.options.length > 0) {
+    // Sauvegarder la question même si elle n'est pas complète (permet de sauvegarder en cours de création)
+    // Mais on exige au minimum un ID ou un label pour éviter les questions complètement vides
+    if (question.id || question.label) {
         return question;
     }
     return null;
@@ -663,17 +678,26 @@ function extractFormFlowFromElement(item) {
     };
     
     // Extraire les questions
-    item.querySelectorAll('.flow-questions .question-item').forEach(qItem => {
-        const q = extractQuestionFromElement(qItem);
-        if (q) flow.questions.push(q);
-    });
+    const questionsContainer = item.querySelector('.flow-questions');
+    if (questionsContainer) {
+        questionsContainer.querySelectorAll('.question-item').forEach((qItem, qIdx) => {
+            const q = extractQuestionFromElement(qItem);
+            if (q) {
+                flow.questions.push(q);
+            } else {
+                console.warn(`Question ${qIdx} du flow "${flow.name || flow.keyword}" non sauvegardée (incomplète)`);
+            }
+        });
+    }
     
     // Extraire les questions à ignorer
     item.querySelectorAll('.skip-question-checkbox:checked').forEach(cb => {
         flow.skip_questions.push(cb.value);
     });
     
-    if (flow.keyword && flow.name && flow.questions.length > 0) {
+    // Sauvegarder le flow même s'il n'est pas complètement rempli (permet de sauvegarder en cours de création)
+    // Mais on exige au minimum un nom ou un mot-clé pour éviter les flows vides
+    if (flow.keyword || flow.name) {
         return flow;
     }
     return null;
@@ -686,12 +710,20 @@ function extractSectorFlowFromElement(item) {
         questions: []
     };
     
-    item.querySelectorAll('.sector-questions .question-item').forEach(qItem => {
-        const q = extractQuestionFromElement(qItem);
-        if (q) flow.questions.push(q);
-    });
+    const questionsContainer = item.querySelector('.sector-questions');
+    if (questionsContainer) {
+        questionsContainer.querySelectorAll('.question-item').forEach((qItem, qIdx) => {
+            const q = extractQuestionFromElement(qItem);
+            if (q) {
+                flow.questions.push(q);
+            } else {
+                console.warn(`Question ${qIdx} du secteur "${flow.sector}" non sauvegardée (incomplète)`);
+            }
+        });
+    }
     
-    if (flow.sector && flow.questions.length > 0) {
+    // Sauvegarder le flow même s'il n'a pas encore de questions (permet de sauvegarder en cours de création)
+    if (flow.sector) {
         return flow;
     }
     return null;
