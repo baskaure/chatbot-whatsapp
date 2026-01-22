@@ -151,43 +151,83 @@ async function finishQuestions(state: ConversationState, config: BotConfig) {
 }
 
 function isValidAnswer(answer: string, options: string[]): string | null {
-  const normalized = normalize(answer);
-  const found = options.find((opt) => normalize(opt) === normalized);
-  return found ?? null;
+  // Normaliser la réponse de l'utilisateur (enlever espaces, accents, minuscules)
+  const normalizedAnswer = normalize(answer);
+  
+  // Chercher une correspondance exacte d'abord
+  let found = options.find((opt) => normalize(opt) === normalizedAnswer);
+  if (found) return found;
+  
+  // Si pas de correspondance exacte, chercher une correspondance partielle
+  // (utile pour les réponses comme "coach" qui matchent "Coach")
+  found = options.find((opt) => {
+    const normalizedOpt = normalize(opt);
+    return normalizedOpt === normalizedAnswer || 
+           normalizedAnswer.includes(normalizedOpt) || 
+           normalizedOpt.includes(normalizedAnswer);
+  });
+  
+  if (found) return found;
+  
+  // Dernière tentative : chercher par index si la réponse est un nombre
+  const answerNum = parseInt(answer.trim());
+  if (!isNaN(answerNum) && answerNum >= 1 && answerNum <= options.length) {
+    // L'utilisateur a répondu par un numéro (1, 2, 3, etc.)
+    return options[answerNum - 1];
+  }
+  
+  return null;
 }
 
 async function handleDecision(state: ConversationState, config: BotConfig, decision: DecisionType) {
   clearReminder(state.phone);
   
   const decisionInfo = makeDecision(state, config);
-  await updateSession(state.phone, { 
-    status: "completed",
-    decision: decisionInfo.decision,
-    decisionReason: decisionInfo.reason,
-    lastActivityAt: new Date().toISOString(),
-  });
   
   const refreshed = await getOrCreateSession(state.phone);
   
   switch (decision) {
     case "rdv":
       await sendMessage({ to: state.phone, body: config.messages.rdv_message || config.messages.qualified_intro });
-      await updateSession(state.phone, { status: "awaiting_preference" });
+      await updateSession(state.phone, { 
+        status: "awaiting_preference",
+        decision: decisionInfo.decision,
+        decisionReason: decisionInfo.reason,
+        lastActivityAt: new Date().toISOString(),
+      });
       break;
     case "humain":
       await sendMessage({ to: state.phone, body: config.messages.humain_message || "Un de nos conseillers va te contacter prochainement." });
+      await updateSession(state.phone, { 
+        status: "completed",
+        decision: decisionInfo.decision,
+        decisionReason: decisionInfo.reason,
+        lastActivityAt: new Date().toISOString(),
+      });
       break;
     case "nurturing":
       await sendMessage({ to: state.phone, body: config.messages.nurturing_message || "Merci pour tes réponses. On va te tenir informé avec du contenu adapté." });
+      await updateSession(state.phone, { 
+        status: "completed",
+        decision: decisionInfo.decision,
+        decisionReason: decisionInfo.reason,
+        lastActivityAt: new Date().toISOString(),
+      });
       break;
     case "sortie":
       await sendMessage({ to: state.phone, body: config.messages.sortie_message || config.messages.disqualified });
-      await updateSession(state.phone, { status: "disqualified" });
+      await updateSession(state.phone, { 
+        status: "disqualified",
+        decision: decisionInfo.decision,
+        decisionReason: decisionInfo.reason,
+        lastActivityAt: new Date().toISOString(),
+      });
       await sendMessage({ to: state.phone, body: "Veux-tu que je t'envoie la ressource ? (oui/non)" });
       break;
   }
   
-  persistConversation(refreshed);
+  const finalState = await getOrCreateSession(state.phone);
+  persistConversation(finalState);
 }
 
 async function handleQualified(state: ConversationState, config: BotConfig) {
@@ -216,6 +256,21 @@ export async function handleIncoming(message: IncomingMessage, config: BotConfig
   // Créer/mettre à jour la fiche prospect dès le premier message
   const { updateProspectProfile } = await import("./storage/localStore.js");
   updateProspectProfile(phone, state);
+
+  // Vérifier les mots-clés d'arrêt
+  const normalized = normalize(body);
+  const stopKeywords = ["stop", "arrêt", "arrete", "arrêter", "fin", "terminer", "quitter", "annuler"];
+  if (stopKeywords.some((kw) => normalized.includes(kw))) {
+    await sendMessage({ to: phone, body: "D'accord, la conversation est terminée. Bonne journée !" });
+    await updateSession(phone, { status: "completed" });
+    return;
+  }
+
+  // Si la conversation est terminée, ne plus répondre
+  if (state.status === "completed") {
+    // La conversation est terminée, on ne répond plus
+    return;
+  }
 
   // PRIORITÉ 1: Vérifier d'abord les statuts spéciaux (disqualified, awaiting_preference)
   // AVANT de vérifier le démarrage, pour éviter que "oui" déclenche un redémarrage
