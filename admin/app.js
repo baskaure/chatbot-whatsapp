@@ -347,15 +347,17 @@ function displayProspects(prospects) {
         const engagement = prospect.metadata?.engagementLevel || 'low';
         
         tr.innerHTML = `
-            <td>${phone}</td>
-            <td>${prospect.score || 0}</td>
-            <td><span class="badge">${prospect.status || ''}</span></td>
-            <td><span class="badge badge-${decision}">${decision}</span></td>
-            <td><span class="badge badge-${engagement}">${engagement}</span></td>
-            <td>${formatDate(prospect.lastActivityAt)}</td>
-            <td>
-                <button class="btn btn-secondary" onclick="viewProspect('${phone.replace(/'/g, "\\'")}')">Voir</button>
-                <button class="btn btn-warning" onclick="resetProspect('${phone.replace(/'/g, "\\'")}')">Réinitialiser</button>
+            <td data-label="Téléphone">${phone}</td>
+            <td data-label="Score">${prospect.score || 0}</td>
+            <td data-label="Statut"><span class="badge">${prospect.status || ''}</span></td>
+            <td data-label="Décision"><span class="badge badge-${decision}">${decision}</span></td>
+            <td data-label="Engagement"><span class="badge badge-${engagement}">${engagement}</span></td>
+            <td data-label="Dernière activité">${formatDate(prospect.lastActivityAt)}</td>
+            <td data-label="Actions">
+                <div class="action-buttons">
+                    <button class="btn btn-secondary" onclick="viewProspect('${phone.replace(/'/g, "\\'")}')">Voir</button>
+                    <button class="btn btn-warning" onclick="resetProspect('${phone.replace(/'/g, "\\'")}')">Réinitialiser</button>
+                </div>
             </td>
         `;
         tbody.appendChild(tr);

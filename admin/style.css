@@ -1259,6 +1259,18 @@ tbody tr:hover::before {
     opacity: 1;
 }
 
+.action-buttons {
+    display: flex;
+    gap: 8px;
+    align-items: center;
+    flex-wrap: wrap;
+}
+
+.action-buttons .btn {
+    white-space: nowrap;
+    flex-shrink: 0;
+}
+
 .badge {
     display: inline-block;
     padding: 6px 14px;
@@ -1502,6 +1514,33 @@ tbody tr:hover::before {
     .question-options {
         grid-template-columns: 1fr;
     }
+
+    table {
+        min-width: 700px;
+        font-size: 13px;
+    }
+
+    th,
+    td {
+        padding: 12px 14px;
+        font-size: 13px;
+    }
+
+    .badge {
+        font-size: 11px;
+        padding: 4px 10px;
+    }
+
+    .action-buttons {
+        display: flex;
+        flex-direction: column;
+        gap: 6px;
+    }
+
+    .action-buttons .btn {
+        font-size: 12px;
+        padding: 8px 12px;
+    }
 }
 
 @media (max-width: 768px) {
@@ -1510,6 +1549,13 @@ tbody tr:hover::before {
         gap: 15px;
         align-items: flex-start;
         padding: 15px 20px;
+    }
+
+    .header-title-group {
+        width: 100%;
+        display: flex;
+        align-items: center;
+        gap: 12px;
     }
 
     .header-brand {
@@ -1523,20 +1569,42 @@ tbody tr:hover::before {
 
     header h1 {
         font-size: 20px;
+        flex: 1;
     }
 
     .header-actions {
         width: 100%;
+        display: flex;
         justify-content: flex-end;
+        gap: 10px;
+    }
+
+    .header-actions .btn {
+        flex: 1;
+        max-width: 150px;
     }
 
     .tabs {
         padding: 0 10px;
+        overflow-x: auto;
+        -webkit-overflow-scrolling: touch;
+        scrollbar-width: thin;
+    }
+
+    .tabs::-webkit-scrollbar {
+        height: 4px;
+    }
+
+    .tabs::-webkit-scrollbar-thumb {
+        background: #d1d5db;
+        border-radius: 2px;
     }
 
     .tab-btn {
         padding: 12px 16px;
         font-size: 13px;
+        white-space: nowrap;
+        flex-shrink: 0;
     }
 
     .tab-content {
@@ -1614,15 +1682,99 @@ tbody tr:hover::before {
         border-left: none;
         border-right: none;
         border-radius: 0;
+        overflow-x: auto;
+        -webkit-overflow-scrolling: touch;
     }
 
     table {
         font-size: 13px;
+        min-width: 600px;
     }
 
     th,
     td {
         padding: 10px 12px;
+        font-size: 12px;
+    }
+
+    th {
+        font-size: 11px;
+        padding: 12px 10px;
+    }
+
+    .action-buttons {
+        display: flex;
+        flex-direction: column;
+        gap: 6px;
+    }
+
+    .action-buttons .btn {
+        font-size: 11px;
+        padding: 6px 10px;
+        white-space: nowrap;
+    }
+
+    /* Transformer le tableau en cartes sur très petits écrans */
+    .table-container table,
+    .table-container thead,
+    .table-container tbody,
+    .table-container th,
+    .table-container td,
+    .table-container tr {
+        display: block;
+    }
+
+    .table-container thead {
+        display: none;
+    }
+
+    .table-container tr {
+        margin-bottom: 16px;
+        background: white;
+        border: 1px solid #e5e7eb;
+        border-radius: 12px;
+        padding: 16px;
+        box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
+        display: block;
+    }
+
+    .table-container td {
+        padding: 10px 0;
+        border: none;
+        text-align: left;
+        position: relative;
+        padding-left: 45%;
+        display: block;
+    }
+
+    .table-container td:before {
+        content: attr(data-label);
+        position: absolute;
+        left: 0;
+        width: 40%;
+        font-weight: 600;
+        font-size: 11px;
+        text-transform: uppercase;
+        color: #6b7280;
+        letter-spacing: 0.5px;
+    }
+
+    .table-container td:last-child {
+        border-bottom: none;
+        padding-top: 12px;
+        margin-top: 8px;
+        border-top: 1px solid #e5e7eb;
+    }
+
+    .table-container .action-buttons {
+        display: flex;
+        flex-direction: column;
+        gap: 8px;
+        margin-top: 8px;
+    }
+
+    .table-container .action-buttons .btn {
+        width: 100%;
     }
 
     .modal-content {
@@ -1708,5 +1860,17 @@ tbody tr:hover::before {
     .badge {
         font-size: 11px;
         padding: 3px 8px;
+    }
+
+    .action-buttons {
+        display: flex;
+        flex-direction: column;
+        gap: 8px;
+    }
+
+    .action-buttons .btn {
+        width: 100%;
+        font-size: 12px;
+        padding: 8px 12px;
     }
 }
