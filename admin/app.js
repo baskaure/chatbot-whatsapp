@@ -11,14 +11,6 @@ document.addEventListener('DOMContentLoaded', () => {
     initTabs();
     loadData();
     setupEventListeners();
-    
-    // Actualiser toutes les 10 secondes
-    setInterval(() => {
-        const activeTab = document.querySelector('.tab-content.active');
-        if (activeTab) {
-            loadData();
-        }
-    }, 10000);
 });
 
 // Gestion des onglets
